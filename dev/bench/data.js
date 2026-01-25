@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769382261156,
+  "lastUpdate": 1769384848651,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -124,6 +124,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0012584312204425986",
             "extra": "mean: 258.90674060000265 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "58976716+GuyNachshon@users.noreply.github.com",
+            "name": "Guy Nachshon",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3499367a328f6381931294d154a4a5fbbf48f88b",
+          "message": "Polecat/onyx/ga ds3@mku7jnoh (#17)\n\n* feat: Add datasets library for conversation sampling (ga-ds3)\n\n* feat: Implement conversation sampling core modules (ga-ds3)\n\n- ConversationSampler: Samples from WildChat-1M and LMSYS-Chat-1M\n- IntentExtractor: Extracts actionable intents using Claude\n- PlanTransformer: Converts intents to ExecutionPlans\n- AdversarialMutator: Applies 20% adversarial mutations\n\nSupports full pipeline from raw conversations to training data.\n\n* docs: Add tests, example script, and documentation (ga-ds3)\n\n- Comprehensive test suite for all conversation modules\n- Example script with CLI for end-to-end pipeline\n- Complete documentation with architecture diagrams\n- Usage examples and troubleshooting guide\n\n* fix: Correct Provenance to ProvenancePointer imports (ga-ds3)\n\n* test: Fix test failures for conversation sampling (ga-ds3)\n\n- Add missing description field to SystemPolicy\n- Fix remaining Provenance references\n- All 22 tests passing\n- 56% coverage of conversation modules",
+          "timestamp": "2026-01-26T01:46:25+02:00",
+          "tree_id": "0717e20d41062f1628c20ad43b2d571cd9ac4600",
+          "url": "https://github.com/ozlabsai/gatling/commit/3499367a328f6381931294d154a4a5fbbf48f88b"
+        },
+        "date": 1769384847789,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.937137027610709,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005467674774886391",
+            "extra": "mean: 253.99166780000542 msec\nrounds: 5"
           }
         ]
       }
