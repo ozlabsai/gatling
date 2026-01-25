@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769381046055,
+  "lastUpdate": 1769382261156,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -93,6 +93,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0007637095028319335",
             "extra": "mean: 262.022023800003 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "guy.na8@gmail.com",
+            "name": "gatling/refinery",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "guy.na8@gmail.com",
+            "name": "Clem 🤗",
+            "username": "GuyNachshon"
+          },
+          "distinct": true,
+          "id": "5b559869f34b50e31934bf63e9ef2266674a22a6",
+          "message": "Merge ga-ds3: Implement conversation sampling with adversarial mutations\n\nAdds pipeline to sample real-world agent conversations from WildChat/LMSYS-Chat\nand transform them into ExecutionPlan format with adversarial mutations.\n\n## Changes\n- Add source/dataset/conversations.py with sampling and transformation pipeline\n- ConversationSampler: Load and parse WildChat/LMSYS-Chat datasets\n- IntentExtractor: Extract action intents from conversations using Claude API\n- PlanTransformer: Convert action intents to ExecutionPlan with tool calls\n- AdversarialMutator: Generate adversarial variants (scope blowup, privilege escalation)\n- Add comprehensive test suite (22 tests, 100% passing)\n- Add example script and documentation\n\n## Test Results\n- All 22 conversation sampling tests passing (100%)\n- Overall: 268/273 tests passing (98.2%)\n- 5 pre-existing test_scope.py failures (unrelated to this MR)\n\nResolves: ga-ds3\nMR: polecat/onyx/ga-ds3@mku7jnoh\nPriority: P1\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-01-26T01:03:14+02:00",
+          "tree_id": "0717e20d41062f1628c20ad43b2d571cd9ac4600",
+          "url": "https://github.com/ozlabsai/gatling/commit/5b559869f34b50e31934bf63e9ef2266674a22a6"
+        },
+        "date": 1769382260762,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.862394612371053,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0012584312204425986",
+            "extra": "mean: 258.90674060000265 msec\nrounds: 5"
           }
         ]
       }
