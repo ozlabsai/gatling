@@ -12,6 +12,7 @@ dependencies = [
     # JEPA encoder dependencies
     "torch>=2.5.0",         # PyTorch for neural networks
     "transformers>=4.46.0", # Hugging Face transformers
+    "datasets>=3.0.0",      # Hugging Face datasets
     "python-dotenv>=1.0.0", # Environment variable management
     "pyyaml>=6.0.0",        # YAML parsing for policies
     "pydantic>=2.10.0",     # Type validation and serialization

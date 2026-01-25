@@ -60,7 +60,6 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="noop",
                     node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
@@ -85,8 +84,13 @@ class TestScopeEnergy:
                     tool_name="list_items",
                     node_id="node1",
                     arguments={"limit": 1},
+                    provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1  # Min valid value
+                )
+            ],
+            edges=[]
+        )
 
         minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
@@ -140,8 +144,6 @@ class TestScopeEnergy:
 
         # Define minimal scope that matches the plan
         minimal_scope = ScopeConstraints(
-            limit=1,
-        minimal_scope = ScopeConstraints(
             limit=1,  # User only needs 1 invoice
             date_range_days=1,
             max_depth=1,
@@ -162,8 +164,13 @@ class TestScopeEnergy:
                     tool_name="list_invoices",
                     node_id="node1",
                     arguments={"limit": 1000},
+                    provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1000,
                     scope_sensitivity=1
+                )
+            ],
+            edges=[]
+        )
         E = energy(plan, minimal_scope=minimal_scope)
 
         # Over-scope of 9999 should create high energy
