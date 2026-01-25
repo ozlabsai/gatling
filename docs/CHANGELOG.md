@@ -13,6 +13,32 @@ Each entry includes:
 
 ---
 
+## 2026-01-26
+
+### E_hierarchy Documentation Addition
+- **Type**: Addition
+- **Component**: Energy Function Documentation
+- **Description**: Added comprehensive implementation documentation for E_hierarchy energy critic to IMPLEMENTATION-LOG.md
+- **Files Modified**:
+  - `docs/IMPLEMENTATION-LOG.md` (updated) - Added E_hierarchy section with technical details
+  - `docs/CHANGELOG.md` (updated)
+- **Details**:
+  - **Documentation Added**:
+    - Overview of RAG-injection detection mechanism
+    - Technical approach: Control Flow Classification + Trust Tier Penalty System
+    - 4 key design decisions with rationale and trade-offs
+    - Complete code structure showing ControlFlowClassifier and HierarchyEnergy
+    - Testing strategy: 8 tests covering initialization, safety, attacks, gradients
+    - Performance metrics: 0.53ms latency (37x better than 20ms target)
+    - Known issues and future improvements (3 phases)
+  - **Quick Reference Table Updated**:
+    - Changed "Energy Functions | Not Started" to individual entries
+    - All 4 energy critics (hierarchy, provenance, scope, flow) + composite now marked Complete
+- **Context**: E_hierarchy was implemented in commit a8018e9 (2026-01-25) but lacked entry in IMPLEMENTATION-LOG.md. Discovered during ga-i5ty verification that implementation was already complete. Added documentation to maintain consistency.
+- **Author**: Claude (Sonnet 4.5) - Polecat quartz verifying ga-i5ty
+
+---
+
 ## 2026-01-25
 
 ### E_scope Test Suite and Documentation
