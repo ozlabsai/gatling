@@ -94,30 +94,40 @@ class SparseStructuredAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.scale = self.head_dim ** -0.5
 
+        # Cache for local attention mask (sequence-length dependent only)
+        self._mask_cache: dict[int, torch.Tensor] = {}
+
     def _create_attention_mask(
         self,
         seq_len: int,
         is_global: torch.Tensor,
         device: torch.device
     ) -> torch.Tensor:
-        """Create sparse attention mask with local windows and global tokens."""
-        mask = torch.zeros(seq_len, seq_len, device=device)
-
-        # Local attention window
-        for i in range(seq_len):
-            start = max(0, i - self.window_size // 2)
-            end = min(seq_len, i + self.window_size // 2 + 1)
-            mask[i, start:end] = 1
-
-        # Global attention
+        """Create sparse attention mask with local windows and global tokens (vectorized with caching)."""
         batch_size = is_global.shape[0]
-        mask_batch = mask.unsqueeze(0).expand(batch_size, -1, -1).clone()
 
+        # Check cache for local mask
+        if seq_len not in self._mask_cache:
+            # Vectorized local attention window creation
+            positions = torch.arange(seq_len, device=device)
+            distances = positions.unsqueeze(1) - positions.unsqueeze(0)
+            local_mask = (distances.abs() <= self.window_size // 2).float()
+            self._mask_cache[seq_len] = local_mask
+        else:
+            local_mask = self._mask_cache[seq_len].to(device)
+
+        # Expand for batch dimension
+        mask_batch = local_mask.unsqueeze(0).expand(batch_size, -1, -1).clone()
+
+        # Vectorized global attention: use advanced indexing
+        # For each batch, set rows and columns of global tokens to 1
         for b in range(batch_size):
-            global_indices = torch.where(is_global[b])[0]
-            for idx in global_indices:
-                mask_batch[b, idx, :] = 1
-                mask_batch[b, :, idx] = 1
+            # Convert boolean tensors to float before combining
+            global_row = is_global[b].unsqueeze(1).float()
+            global_col = is_global[b].unsqueeze(0).float()
+            # Use max instead of bitwise or for float tensors
+            global_mask = torch.maximum(global_row, global_col)
+            mask_batch[b] = torch.maximum(mask_batch[b], global_mask)
 
         return mask_batch
 
@@ -357,9 +367,23 @@ class GovernanceEncoder(nn.Module):
 def create_governance_encoder(
     latent_dim: int = 1024,
     checkpoint_path: str | None = None,
-    device: str = "cpu"
+    device: str = "cpu",
+    optimize_inference: bool = False
 ) -> GovernanceEncoder:
-    """Factory function to create GovernanceEncoder."""
+    """
+    Factory function to create GovernanceEncoder.
+
+    Args:
+        latent_dim: Dimension of output latent vector (default: 1024)
+        checkpoint_path: Path to load model weights from
+        device: Device to run model on ('cpu' or 'cuda')
+        optimize_inference: Enable torch.compile for faster inference (default: False)
+                          Note: torch.compile changes model structure and may break
+                          checkpoint loading/saving compatibility
+
+    Returns:
+        Configured GovernanceEncoder instance
+    """
     model = GovernanceEncoder(latent_dim=latent_dim)
 
     if checkpoint_path is not None:
@@ -367,5 +391,16 @@ def create_governance_encoder(
 
     model = model.to(device)
     model.training = False  # Set to inference mode
+
+    # Apply torch.compile for inference optimization (PyTorch 2.0+)
+    # Disabled by default to maintain checkpoint compatibility
+    if optimize_inference and hasattr(torch, 'compile'):
+        try:
+            # Use "reduce-overhead" mode for repeated inference with similar inputs
+            compiled = torch.compile(model, mode="reduce-overhead")
+            return compiled  # type: ignore[return-value]
+        except Exception:
+            # Fall back to uncompiled if compile fails (e.g., unsupported platform)
+            pass
 
     return model
