@@ -172,6 +172,8 @@ class TestScopeEnergy:
             ],
             edges=[]
         )
+
+        minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
 
         # Over-scope of 9999 should create high energy
