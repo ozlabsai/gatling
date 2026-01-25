@@ -300,6 +300,7 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="search_records",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 100, "days": 90, "depth": 3},
                     scope_volume=100,
                     scope_sensitivity=1
