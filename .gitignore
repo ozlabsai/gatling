@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+build/
+dist/
+wheels/
+*.egg-info
+*.egg
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# UV
+.uv/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Type checking & Linting
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Model artifacts (keep JSON manifests, exclude weights)
+outputs/**/*.pt
+outputs/**/*.pth
+outputs/**/*.ckpt
+outputs/**/*.safetensors
+checkpoints/
+
+# Data (exclude large files)
+data/raw/
+data/processed/
+
+# Logs
+logs/
+*.log
+
+# Benchmarks
+.benchmarks/
+
+# Environment variables (NEVER commit API keys)
+.env
+.env.local
+.env.*.local

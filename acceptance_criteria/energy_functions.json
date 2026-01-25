@@ -1,0 +1,31 @@
+{
+  "code_quality": {
+    "required": [
+      "Type hints for all functions",
+      "Mathematical notation in docstrings",
+      "PEP8 compliant"
+    ]
+  },
+  "functionality": {
+    "required": [
+      "Differentiable w.r.t. both inputs",
+      "Returns scalar energy value",
+      "Correct violation detection on test cases",
+      "Handles variable input sizes"
+    ]
+  },
+  "performance": {
+    "required": [
+      "Evaluation time < 5ms per plan",
+      "Vectorized operations where possible"
+    ]
+  },
+  "tests": {
+    "required": [
+      "Differentiability test",
+      "Violation detection tests (TP/TN)",
+      "Numerical stability tests",
+      "Integration with encoders"
+    ]
+  }
+}

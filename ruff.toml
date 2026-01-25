@@ -1,0 +1,50 @@
+# Ruff configuration for Project Gatling
+
+# Target Python 3.13
+target-version = "py313"
+
+# Line length
+line-length = 100
+
+# Enable auto-fixing
+fix = true
+
+[lint]
+# Enable specific rule sets
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "B008",  # Do not perform function call in argument defaults (Pydantic uses this)
+    "B904",  # Use raise from for chained exceptions (sometimes not needed)
+    "N812",  # Lowercase imported as non-lowercase (PyTorch F convention)
+]
+
+[lint.per-file-ignores]
+# Test files can have longer lines and different naming conventions
+"test_*.py" = ["N802", "N803"]
+"**/test/**/*.py" = ["N802", "N803"]
+
+[format]
+# Use double quotes
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
+
+# Respect magic trailing comma
+skip-magic-trailing-comma = false
+
+# Format docstrings
+docstring-code-format = true

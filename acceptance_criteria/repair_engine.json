@@ -1,0 +1,32 @@
+{
+  "code_quality": {
+    "required": [
+      "Type hints for all functions",
+      "Algorithm complexity documented",
+      "PEP8 compliant"
+    ]
+  },
+  "functionality": {
+    "required": [
+      "Reduces energy below threshold",
+      "Preserves Functional Intent Similarity > 0.9",
+      "Handles all mutation types",
+      "Terminates in bounded time"
+    ]
+  },
+  "performance": {
+    "required": [
+      "Total latency < 200ms",
+      "Greedy search < 50ms",
+      "Beam search < 150ms"
+    ]
+  },
+  "tests": {
+    "required": [
+      "Tested on 1000+ malicious plans",
+      "FIS validation",
+      "Convergence tests",
+      "Edge case handling"
+    ]
+  }
+}
