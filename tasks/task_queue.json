@@ -176,17 +176,6 @@
       "created_by": "research_planner"
     },
     {
-      "id": "EGA-001",
-      "component": "E_hierarchy",
-      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
-      "depends_on": [
-        "LSA-001",
-        "LSA-002"
-      ],
-      "priority": "high",
-      "status": "ready"
-    },
-    {
       "id": "EGA-002",
       "component": "E_provenance",
       "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
@@ -347,6 +336,19 @@
       "updated_by": "research_planner",
       "error": "Streaming is required for operations that may take longer than 10 minutes. See https://github.com/anthropics/anthropic-sdk-python#long-requests for more details",
       "completed_at": "2026-01-25T13:37:44.735740"
+    },
+    {
+      "id": "EGA-001",
+      "component": "E_hierarchy",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
+      "depends_on": [
+        "LSA-001",
+        "LSA-002"
+      ],
+      "priority": "high",
+      "status": "completed",
+      "completed_at": "2026-01-25T15:43:22.256025",
+      "completed_by": "cool-wolf"
     }
   ],
   "failed": []
