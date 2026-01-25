@@ -39,3 +39,8 @@ addopts = "-v --tb=short"
 markers = [
     "benchmark: performance benchmark tests",
 ]
+
+[dependency-groups]
+dev = [
+    "types-pyyaml>=6.0.12.20250915",
+]
