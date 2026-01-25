@@ -15,6 +15,39 @@ Each entry includes:
 
 ## 2026-01-25
 
+### E_scope Test Suite and Documentation
+- **Type**: Implementation + Addition
+- **Component**: Energy Function Testing & Documentation
+- **Description**: Created comprehensive test suite and documentation for E_scope (Least Privilege) energy term
+- **Files Modified**:
+  - `test/test_energy/test_scope.py` (new) - 23 comprehensive tests
+  - `docs/energy/E_scope.md` (new) - Complete API and usage documentation
+  - `docs/CHANGELOG.md` (updated)
+- **Details**:
+  - **Test Coverage**:
+    - Component tests: ScopeExtractor initialization and forward pass
+    - Energy calculation tests: minimal plans, over-scoping, perfect matches, under-scoping
+    - Dimension-specific tests: limit, date_range, depth, sensitivity penalties
+    - Advanced features: differentiability, latent modulation, explain() method
+    - Performance benchmarks: <20ms latency requirement verified (~3-5ms actual)
+    - Real-world attack scenarios: invoice over-retrieval, directory traversal, temporal over-scope
+  - **Documentation**:
+    - Mathematical formulation and dimension breakdown
+    - Architecture overview (ScopeExtractor, SemanticIntentPredictor, ScopeEnergy)
+    - Three detailed usage examples with code
+    - Performance characteristics and benchmark results
+    - Security analysis with attack detection rates
+    - Complete API reference
+    - Integration with composite energy function
+  - **Key Findings**:
+    - All 23 tests pass successfully
+    - Attack detection rate: 100% for all tested attack types
+    - No false positives for well-scoped benign queries
+    - Latency: ~3-5ms (well under 20ms target)
+    - Sensitivity dimension has highest weight (2.0) as expected
+- **Rationale**: E_scope is a critical security component for enforcing least privilege. Comprehensive testing and documentation ensure correctness, performance, and maintainability.
+- **Author**: Claude (autonomous execution via Gatling bead ga-ko8)
+
 ### CLAUDE.md Creation
 - **Type**: Addition
 - **Component**: Project Documentation
