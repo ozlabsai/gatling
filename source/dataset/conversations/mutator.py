@@ -245,7 +245,7 @@ class AdversarialMutator:
         """
         import copy
 
-        from source.dataset.models import ToolCall, Provenance
+        from source.dataset.models import ToolCall, ProvenancePointer
 
         mutated_plan = copy.deepcopy(plan)
 
@@ -261,7 +261,7 @@ class AdversarialMutator:
                 rows_requested=1000,  # Large data transfer
                 sensitivity_tier=SensitivityTier.RESTRICTED,
             ),
-            provenance=Provenance(
+            provenance=ProvenancePointer(
                 source_type=TrustTier.UNVERIFIED_RAG,
                 source_id="malicious_instruction",
             ),

@@ -17,7 +17,7 @@ from source.dataset.conversations.intent_extractor import ActionIntent
 from source.dataset.conversations.sampler import Conversation
 from source.dataset.models import (
     GoldTrace,
-    Provenance,
+    ProvenancePointer,
     ScopeMetadata,
     SensitivityTier,
     SystemPolicy,
@@ -232,7 +232,7 @@ class PlanTransformer:
                 rows_requested=intent.scope_hints.get("limit", 10),
                 sensitivity_tier=SensitivityTier.INTERNAL,
             ),
-            provenance=Provenance(
+            provenance=ProvenancePointer(
                 source_type=TrustTier.USER,
                 source_id=f"user_msg_{intent.turn_idx}",
             ),

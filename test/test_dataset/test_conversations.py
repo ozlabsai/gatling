@@ -313,7 +313,7 @@ class TestAdversarialMutator:
             ToolCallGraph,
             ToolCall,
             ScopeMetadata,
-            Provenance,
+            ProvenancePointer,
             SensitivityTier,
             TrustTier,
         )
@@ -334,7 +334,7 @@ class TestAdversarialMutator:
                 rows_requested=5,
                 sensitivity_tier=SensitivityTier.INTERNAL,
             ),
-            provenance=Provenance(
+            provenance=ProvenancePointer(
                 source_type=TrustTier.USER,
                 source_id="user_1",
             ),
@@ -388,7 +388,7 @@ class TestAdversarialMutator:
             ToolCallGraph,
             ToolCall,
             ScopeMetadata,
-            Provenance,
+            ProvenancePointer,
             SensitivityTier,
             TrustTier,
         )
@@ -408,7 +408,7 @@ class TestAdversarialMutator:
                 rows_requested=1,
                 sensitivity_tier=SensitivityTier.INTERNAL,
             ),
-            provenance=Provenance(
+            provenance=ProvenancePointer(
                 source_type=TrustTier.USER,
                 source_id="user_1",
             ),
@@ -462,7 +462,7 @@ class TestAdversarialMutator:
             ToolCallGraph,
             ToolCall,
             ScopeMetadata,
-            Provenance,
+            ProvenancePointer,
             SensitivityTier,
             TrustTier,
         )
