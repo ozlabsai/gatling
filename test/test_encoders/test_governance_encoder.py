@@ -31,14 +31,8 @@ from source.encoders.governance_encoder import (
 def sample_policy_simple() -> dict[str, Any]:
     """Simple policy for basic tests."""
     return {
-        "permissions": {
-            "read": ["users", "posts"],
-            "write": ["posts"]
-        },
-        "constraints": {
-            "max_records": 100,
-            "allowed_fields": ["id", "name", "email"]
-        }
+        "permissions": {"read": ["users", "posts"], "write": ["posts"]},
+        "constraints": {"max_records": 100, "allowed_fields": ["id", "name", "email"]},
     }
 
 
@@ -46,54 +40,34 @@ def sample_policy_simple() -> dict[str, Any]:
 def sample_policy_complex() -> dict[str, Any]:
     """Complex nested policy."""
     return {
-        "identity": {
-            "roles": ["analyst", "viewer"],
-            "team": "security",
-            "clearance_level": 3
-        },
+        "identity": {"roles": ["analyst", "viewer"], "team": "security", "clearance_level": 3},
         "permissions": {
             "data_access": {
                 "databases": {
                     "production": {
                         "read": True,
                         "write": False,
-                        "tables": ["users", "logs", "events"]
+                        "tables": ["users", "logs", "events"],
                     },
-                    "staging": {
-                        "read": True,
-                        "write": True,
-                        "tables": ["*"]
-                    }
+                    "staging": {"read": True, "write": True, "tables": ["*"]},
                 },
-                "apis": {
-                    "internal": ["user_service", "auth_service"],
-                    "external": []
-                }
+                "apis": {"internal": ["user_service", "auth_service"], "external": []},
             },
             "tool_access": {
                 "allowed_tools": ["read_file", "list_directory", "search_logs"],
-                "forbidden_tools": ["delete_file", "execute_command", "modify_permissions"]
-            }
+                "forbidden_tools": ["delete_file", "execute_command", "modify_permissions"],
+            },
         },
         "constraints": {
-            "rate_limits": {
-                "queries_per_minute": 100,
-                "max_results_per_query": 1000
-            },
-            "data_retention": {
-                "max_days": 90,
-                "require_justification": True
-            },
-            "scope_restrictions": {
-                "geographic": ["US", "EU"],
-                "time_window": "business_hours"
-            }
+            "rate_limits": {"queries_per_minute": 100, "max_results_per_query": 1000},
+            "data_retention": {"max_days": 90, "require_justification": True},
+            "scope_restrictions": {"geographic": ["US", "EU"], "time_window": "business_hours"},
         },
         "audit": {
             "log_all_access": True,
             "require_approval_for": ["bulk_export", "pii_access"],
-            "notification_channels": ["slack", "email"]
-        }
+            "notification_channels": ["slack", "email"],
+        },
     }
 
 
@@ -103,7 +77,7 @@ def sample_policy_schema(sample_policy_simple) -> PolicySchema:
     return PolicySchema(
         document=sample_policy_simple,
         user_role="analyst",
-        session_context={"ip": "192.168.1.1", "timestamp": "2026-01-25T00:00:00Z"}
+        session_context={"ip": "192.168.1.1", "timestamp": "2026-01-25T00:00:00Z"},
     )
 
 
@@ -150,30 +124,21 @@ class TestPolicySchema:
 
     def test_policy_schema_dict(self, sample_policy_simple):
         """Test schema accepts dict policies."""
-        schema = PolicySchema(
-            document=sample_policy_simple,
-            user_role="admin"
-        )
+        schema = PolicySchema(document=sample_policy_simple, user_role="admin")
         assert schema.user_role == "admin"
         assert isinstance(schema.document, dict)
 
     def test_policy_schema_json_string(self, sample_policy_simple):
         """Test schema parses JSON strings."""
         json_str = json.dumps(sample_policy_simple)
-        schema = PolicySchema(
-            document=json_str,
-            user_role="user"
-        )
+        schema = PolicySchema(document=json_str, user_role="user")
         assert isinstance(schema.document, dict)
         assert schema.document == sample_policy_simple
 
     def test_policy_schema_yaml_string(self, sample_policy_simple):
         """Test schema parses YAML strings."""
         yaml_str = yaml.dump(sample_policy_simple)
-        schema = PolicySchema(
-            document=yaml_str,
-            user_role="user"
-        )
+        schema = PolicySchema(document=yaml_str, user_role="user")
         assert isinstance(schema.document, dict)
 
     def test_policy_schema_invalid_string(self):
@@ -181,20 +146,14 @@ class TestPolicySchema:
         # YAML is very permissive - it will parse almost anything as a string
         # This test verifies that completely invalid JSON at least gets converted
         # (YAML will parse it as a plain string, which is acceptable)
-        schema = PolicySchema(
-            document="{invalid json syntax}",
-            user_role="user"
-        )
+        schema = PolicySchema(document="{invalid json syntax}", user_role="user")
         # YAML parses this as a string, which is fine
         assert schema.document is not None
 
     def test_policy_schema_empty_role(self):
         """Test schema rejects empty role."""
         with pytest.raises(ValueError):
-            PolicySchema(
-                document={"test": "policy"},
-                user_role=""
-            )
+            PolicySchema(document={"test": "policy"}, user_role="")
 
 
 # Test: Core encoding functionality
@@ -225,11 +184,7 @@ class TestEncodingFunctionality:
 
     def test_encode_with_session_context(self, encoder, sample_policy_simple):
         """Test encoding with session context."""
-        session_ctx = {
-            "user_id": "12345",
-            "timestamp": "2026-01-25",
-            "source_ip": "10.0.0.1"
-        }
+        session_ctx = {"user_id": "12345", "timestamp": "2026-01-25", "source_ip": "10.0.0.1"}
         z_g = encoder(sample_policy_simple, user_role="user", session_context=session_ctx)
 
         assert z_g.shape == (1, 1024)
@@ -275,11 +230,7 @@ class TestVariableLengthHandling:
         """Test encoding large policy (triggers truncation)."""
         # Create policy with many entries
         large_policy = {
-            f"section_{i}": {
-                f"rule_{j}": f"value_{j}"
-                for j in range(50)
-            }
-            for i in range(20)
+            f"section_{i}": {f"rule_{j}": f"value_{j}" for j in range(50)} for i in range(20)
         }
 
         z_g = encoder(large_policy, user_role="admin")
@@ -314,7 +265,7 @@ class TestDifferentiability:
         z_g = encoder(sample_policy_simple, user_role="analyst")
 
         # Compute dummy loss - use a more complex loss to ensure gradients
-        loss = (z_g ** 2).mean()  # Quadratic loss ensures non-zero gradients
+        loss = (z_g**2).mean()  # Quadratic loss ensures non-zero gradients
         loss.backward()
 
         # Check gradients exist and are valid
@@ -357,7 +308,7 @@ class TestBatchProcessing:
         policies = [
             PolicySchema(document=sample_policy_simple, user_role="user"),
             PolicySchema(document=sample_policy_complex, user_role="admin"),
-            PolicySchema(document=sample_policy_simple, user_role="analyst")
+            PolicySchema(document=sample_policy_simple, user_role="analyst"),
         ]
 
         z_g_batch = encoder.encode_batch(policies)
@@ -404,7 +355,7 @@ class TestPerformance:
         benchmark(run_inference)
 
         # Check latency
-        mean_time_ms = benchmark.stats['mean'] * 1000
+        mean_time_ms = benchmark.stats["mean"] * 1000
         print(f"\nMean inference time: {mean_time_ms:.2f}ms")
 
         # Current implementation: ~98ms on dev CPU, ~365ms on CI (GitHub Actions shared runners)
@@ -422,11 +373,15 @@ class TestPerformance:
         encoder.training = False
 
         # Calculate actual model size
-        param_size_mb = sum(p.numel() * p.element_size() for p in encoder.parameters()) / 1024 / 1024
+        param_size_mb = (
+            sum(p.numel() * p.element_size() for p in encoder.parameters()) / 1024 / 1024
+        )
         buffer_size_mb = sum(b.numel() * b.element_size() for b in encoder.buffers()) / 1024 / 1024
         total_model_mb = param_size_mb + buffer_size_mb
 
-        print(f"\nModel size: {total_model_mb:.2f}MB (params: {param_size_mb:.2f}MB, buffers: {buffer_size_mb:.2f}MB)")
+        print(
+            f"\nModel size: {total_model_mb:.2f}MB (params: {param_size_mb:.2f}MB, buffers: {buffer_size_mb:.2f}MB)"
+        )
 
         # Model itself should be well under 500MB
         assert total_model_mb < 500, f"Model size {total_model_mb:.2f}MB exceeds 500MB target"
@@ -458,15 +413,15 @@ class TestInternalComponents:
         assert len(flattened) > 0
 
         # Check global tokens exist (top-level sections)
-        global_tokens = [t for t in flattened if t['is_global']]
+        global_tokens = [t for t in flattened if t["is_global"]]
         assert len(global_tokens) > 0
 
         # Check depth information
-        depths = [t['depth'] for t in flattened]
+        depths = [t["depth"] for t in flattened]
         assert max(depths) > 0  # Should have nested structure
 
         # Check node types
-        node_types = {t['node_type'] for t in flattened}
+        node_types = {t["node_type"] for t in flattened}
         assert len(node_types) > 1  # Should have different node types
 
     def test_tokenization(self, encoder):
@@ -496,7 +451,7 @@ class TestInternalComponents:
         is_global = torch.zeros(1, seq_len, dtype=torch.bool)
         is_global[0, 0] = True  # First token is global
 
-        mask = attn._create_attention_mask(seq_len, is_global, torch.device('cpu'))
+        mask = attn._create_attention_mask(seq_len, is_global, torch.device("cpu"))
 
         assert mask.shape == (1, seq_len, seq_len)
 
@@ -521,13 +476,7 @@ class TestEdgeCases:
 
     def test_policy_with_none_values(self, encoder):
         """Test policy with None values."""
-        policy = {
-            "setting1": None,
-            "setting2": "value",
-            "nested": {
-                "key": None
-            }
-        }
+        policy = {"setting1": None, "setting2": "value", "nested": {"key": None}}
         z_g = encoder(policy, user_role="user")
 
         assert z_g.shape == (1, 1024)
@@ -539,7 +488,7 @@ class TestEdgeCases:
             "key with spaces": "value",
             "key.with.dots": "value",
             "key-with-dashes": "value",
-            "key_with_underscores": "value"
+            "key_with_underscores": "value",
         }
         z_g = encoder(policy, user_role="user")
 
@@ -570,10 +519,7 @@ class TestIntegration:
         schema = PolicySchema(
             document=sample_policy_complex,
             user_role="security_analyst",
-            session_context={
-                "timestamp": "2026-01-25T10:30:00Z",
-                "source": "web_portal"
-            }
+            session_context={"timestamp": "2026-01-25T10:30:00Z", "source": "web_portal"},
         )
 
         # Encode
@@ -596,15 +542,12 @@ class TestIntegration:
 
         # Load via factory
         loaded_encoder = create_governance_encoder(
-            latent_dim=1024,
-            checkpoint_path=str(checkpoint_path)
+            latent_dim=1024, checkpoint_path=str(checkpoint_path)
         )
 
         # Verify weights match
         for (name1, param1), (name2, param2) in zip(
-            encoder.named_parameters(),
-            loaded_encoder.named_parameters(),
-            strict=True
+            encoder.named_parameters(), loaded_encoder.named_parameters(), strict=True
         ):
             assert name1 == name2
             assert torch.allclose(param1, param2)
