@@ -57,6 +57,50 @@ To handle discrete tool names and arguments, Gatling utilizes a **Deterministic 
 * **Distillation:** Common repair patterns are distilled into a "Fast-Path Policy." These distilled predictions propose safe plans, but **final execution remains gated by the EBM** to prevent model drift or adversarial exploitation of the distilled policy.
 * **Safety-Efficiency Curve:** Success is measured by the trade-off between **Violation Rate** (hard constraint breaks) and **Task Utility** (success on benign tasks).
 
+## Gold Trace Generation (Stage A)
+
+The dataset generation system creates 4M policy-compliant tool-use traces for training the JEPA encoders.
+
+### Quick Start
+
+```bash
+# Set your Anthropic API key
+export ANTHROPIC_API_KEY="your_key_here"
+
+# Generate sample dataset (100 traces)
+uv run python source/dataset/generator.py --sample
+
+# Generate full dataset (4M traces)
+uv run python source/dataset/generator.py --total 4000000
+
+# Run examples
+uv run python examples/generate_sample_traces.py
+```
+
+### Features
+
+- **50+ Domains**: Finance, HR, DevOps, Email, Calendar, Cloud, Database, Sales, and more
+- **Oracle Agent**: Claude Sonnet 4.5 generates diverse, policy-compliant traces
+- **Multi-Phase Validation**: Structural, policy, and scope validation
+- **Checkpoint System**: Recoverable generation with progress tracking
+- **Comprehensive Testing**: 27 tests covering all components
+
+### Documentation
+
+- [Gold Trace Generation](docs/GOLD_TRACE_GENERATION.md) - Complete implementation guide
+- [Dataset Workstream](docs/DATASET-WORKSTREAM.md) - Full SID pipeline
+- [Dataset Module](source/dataset/README.md) - Module documentation
+
+### Dataset Structure
+
+Each gold trace contains:
+- **User Request**: Natural language request + intent category
+- **System Policy**: Domain-specific rules and scope limits
+- **Tool-Call Graph**: DAG of tool invocations with provenance
+- **Validation**: 100% policy compliance guarantee
+
+See [examples/generate_sample_traces.py](examples/generate_sample_traces.py) for usage examples.
+
 ## Multi-Agent Development System
 
 This project uses an autonomous multi-agent system for parallel development across research workstreams.
@@ -84,8 +128,7 @@ The system includes specialized agents for each workstream:
 - **EnergyGeometryAgent**: Energy functions (Weeks 4-6)
 - **ProvenanceAgent**: Trust architecture & repair (Weeks 4-6)
 - **RedTeamAgent**: Adversarial mutations (Weeks 7-9)
-- **DatasetAgent**: Gatling-10M dataset (Weeks 7-9)
+- **DatasetAgent**: Gatling-10M dataset (Weeks 7-9) - **✓ Stage A Complete**
 - **IntegrationAgent**: E2E testing (Weeks 10-12)
 
 Each agent runs autonomously with full Claude Code capabilities.
-# CI test
