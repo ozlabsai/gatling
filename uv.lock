@@ -636,7 +636,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.18.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.10.0" },
-    { name = "datasets", specifier = ">=3.0.0" },
+    { name = "datasets", specifier = ">=3.2.0" },
     { name = "matplotlib", specifier = ">=3.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
     { name = "networkx", specifier = ">=3.0" },
