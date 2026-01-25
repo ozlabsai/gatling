@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769360417693,
+  "lastUpdate": 1769381046055,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -62,6 +62,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00020415850608281985",
             "extra": "mean: 251.7647127999993 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "58976716+GuyNachshon@users.noreply.github.com",
+            "name": "Guy Nachshon",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9627bf9e2d83097794ff29a2919caf70e17c2039",
+          "message": "Polecat/obsidian/ga ye4h@mkua8h70 (#19)\n\n* fix: Resolve syntax errors in test_energy/test_scope.py\n\n- Fixed duplicate incomplete ToolCallNode declarations throughout file\n- Removed orphaned code fragments from line 737-743\n- Fixed missing closing parentheses in ExecutionPlan declarations\n- Removed duplicate keyword arguments (date_range_days)\n- Corrected test_over_scoped_limit_high_energy assertion logic\n\nResolves ga-3u8k. Some test assertions still need adjustment but syntax\nerrors are fully resolved, allowing test collection and execution.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n\n* feat: Implement JEPA encoder training pipeline with InfoNCE loss\n\nImplements LSA-004: Train dual encoders (GovernanceEncoder and ExecutionEncoder)\nusing InfoNCE contrastive learning for energy-based security validation.\n\nKey Features:\n- InfoNCE loss for contrastive learning on (z_g, z_e) pairs\n- Dual encoder training in shared 1024-dim latent space\n- Gold trace dataset loader with synthetic sample fallback\n- Validation metrics: loss, positive similarity, NN accuracy\n- HuggingFace Hub integration for model publishing\n- Checkpoint saving and resumption\n- Comprehensive training documentation\n\nArchitecture:\n- GovernanceEncoder: (policy, user_role) → z_g ∈ R^1024\n- ExecutionEncoder: (plan_graph, provenance) → z_e ∈ R^1024\n- Temperature-scaled cosine similarity with cross-entropy\n\nTraining Pipeline:\n- Dataset: JSONL gold traces (governance_context + execution_plan)\n- Batch contrastive learning with in-batch negatives\n- AdamW optimizer with gradient clipping\n- Periodic checkpointing every 5 epochs\n- Optional push to HuggingFace Hub\n\nUsage:\n  uv run python scripts/train_jepa_encoders.py --dataset data/gold_traces.jsonl\n  uv run python scripts/train_jepa_encoders.py --epochs 50 --push-to-hub\n\nPerformance Targets (LSA-004):\n- Training: <24hr on single GPU\n- Inference: <200ms end-to-end (Audit + Repair)\n- NN Accuracy: ≥85% on validation set\n\nDocumentation: docs/TRAINING.md\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n\n* test: Add comprehensive tests for JEPA training pipeline\n\nAdds test coverage for InfoNCE loss, dataset loading, and training components:\n\nTest Coverage:\n- InfoNCELoss: loss computation, perfect alignment, temperature effects\n- GoldTraceDataset: synthetic samples, JSONL loading, iteration\n- collate_fn: batch collation and formatting\n- TrainingConfig: default and custom configurations\n- Integration: end-to-end batch processing, import validation\n\nAll 11 tests pass successfully, validating training pipeline components.\n\nTest Results:\n✓ InfoNCE loss computes correctly with proper gradient flow\n✓ Dataset loader handles both real and synthetic gold traces\n✓ Batch collation properly groups governance contexts and execution plans\n✓ Config system supports customization while maintaining sensible defaults\n\nRelated: LSA-004\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-01-26T00:42:53+02:00",
+          "tree_id": "96bc6cd1d1bf84f623ed9074d74d0ff95911d625",
+          "url": "https://github.com/ozlabsai/gatling/commit/9627bf9e2d83097794ff29a2919caf70e17c2039"
+        },
+        "date": 1769381045659,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.816473079237351,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0007637095028319335",
+            "extra": "mean: 262.022023800003 msec\nrounds: 5"
           }
         ]
       }
