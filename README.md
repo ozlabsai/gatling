@@ -88,3 +88,4 @@ The system includes specialized agents for each workstream:
 - **IntegrationAgent**: E2E testing (Weeks 10-12)
 
 Each agent runs autonomously with full Claude Code capabilities.
+# CI test
