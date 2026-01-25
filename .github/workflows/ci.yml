@@ -76,6 +76,8 @@ jobs:
     runs-on: ubuntu-latest
     # Only run on main branch to avoid slowdown on every PR
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write  # Allow pushing to gh-pages branch
 
     steps:
     - uses: actions/checkout@v4
