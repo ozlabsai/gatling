@@ -1,242 +1,192 @@
-# Worker Instructions for Project Gatling
+# Worker Instructions - PRD-Driven Approach
 
 ## Your Role
 
-You are a worker agent implementing a specific task from the Gatling project task queue.
+You implement components for Project Gatling by reading requirements from the PRD.
 
 ## Workflow
 
-### 1. Extract Task Information
+### 1. Read Your Task Assignment
 
-When assigned a task like:
-"Implement GovernanceEncoder (LSA-001)"
+When assigned a task like: `"Implement E_hierarchy (EGA-001)"`
 
 Extract:
-- Task ID: `LSA-001`
-- Component: `GovernanceEncoder`
+- Task ID: `EGA-001`
+- Component: `E_hierarchy`
 
-### 2. Read Full Task Specification
+### 2. Get PRD Section from Task Queue
+
 ```bash
-# Read the complete task spec
-cat tasks/task_queue.json | python3 -c "
-import json, sys
-q = json.load(sys.stdin)
-for status in q.keys():
-    for task in q.get(status, []):
-        if task['id'] == 'LSA-001':  # Replace with your task ID
-            import pprint
-            pprint.pprint(task)
-"
+TASK_ID="EGA-001"  # Your task ID
+
+# Get PRD section
+PRD_SECTION=$(cat tasks/task_queue.json | python3 << PYEOF
+import json
+with open('tasks/task_queue.json') as f:
+    q = json.load(f)
+for status in q.values():
+    if isinstance(status, list):
+        for task in status:
+            if task.get('id') == '$TASK_ID':
+                print(task.get('prd_section', 'docs/PRD.md'))
+                break
+PYEOF
+)
+
+echo "Reading requirements from: $PRD_SECTION"
 ```
 
-### 3. Check Dependencies
+### 3. Read Requirements from PRD
 
-BEFORE implementing, verify dependencies are merged:
 ```bash
-# Check if dependency exists in main
-dep_id="LSA-001"  # Replace with actual dependency
-if ! git log origin/main --oneline | grep -q "$dep_id"; then
-    echo "ERROR: Dependency $dep_id not merged yet!"
-    multiclaude agent send-message supervisor "Cannot start - dependency $dep_id not merged"
-    exit 1
-fi
+# Read the PRD section
+cat $PRD_SECTION | grep -A 50 "E_hierarchy"
+
+# Or read entire section
+cat docs/WORK-DISTRIBUTION.md
 ```
 
-### 4. Implementation Standards
+The PRD contains:
+- **What** to build (component description)
+- **Why** we need it (motivation)
+- **How** it should work (architecture)
+- **Acceptance criteria** (quality standards)
 
-**Use UV for all operations:**
-```bash
-uv add torch transformers    # Add dependencies
-uv run pytest test/          # Run tests
-uv run ruff check source/    # Lint (if available)
+**Use the PRD as your spec, not task_queue.json!**
+
+### 4. Implement Per PRD
+
+Follow the architecture described in the PRD:
+
+```python
+# Example from reading PRD:
+# "E_hierarchy: MLP classifier on [z_g, z_e] → binary violation score"
+
+class HierarchyEnergy(nn.Module):
+    """
+    Energy function penalizing untrusted data in control flow.
+    
+    Per PRD Section: Energy Geometry Workstream
+    Architecture: MLP on concatenated latents
+    """
+    def __init__(self, latent_dim=1024):
+        # Implementation per PRD specs
+        pass
 ```
 
-**Code location by workstream:**
-- LSA (Latent Substrate): `source/encoders/`
-- EGA (Energy Geometry): `source/energy/`
-- PA (Provenance): `source/provenance/`
-- RTA (Red Team): `source/adversarial/`
-- DA (Dataset): `source/dataset/`
-- IA (Integration): `source/integration/`
+### 5. Standard Outputs
 
-**Test location:**
-- `test/test_<component>.py`
+Every task requires:
+- **Code**: `source/<workstream>/<component>.py`
+- **Tests**: `test/test_<component>.py` (>90% coverage)
+- **Docs**: `docs/<workstream>/<component>.md`
+- **Artifact**: `outputs/<workstream>/<TASK-ID>_artifact.json`
 
-**Documentation:**
-- `docs/<workstream>/<component>.md`
+### 6. Update Task Queue on Completion
 
-### 5. Development Process
-```bash
-# 1. Research best practices
-# Use web search for current approaches in your domain
-
-# 2. Design solution
-# Plan architecture, choose libraries
-
-# 3. Implement incrementally
-# - Start with interfaces/types
-# - Implement core logic
-# - Add validation
-# - Write tests alongside code
-
-# 4. Run tests frequently
-uv run pytest test/test_your_component.py -v
-
-# 5. Fix failures
-# Debug, refine, re-test
-
-# 6. Document
-# Write clear docstrings and usage examples
-```
-
-### 6. Required Outputs
-
-Every task MUST create:
-
-1. **Code**: Implementation in `source/`
-2. **Tests**: Comprehensive tests in `test/` (>90% coverage target)
-3. **Docs**: Documentation in `docs/`
-4. **Artifact**: Manifest in `outputs/<workstream>/<task-id>_artifact.json`
-
-### 7. Artifact Format
-```json
-{
-    "task_id": "LSA-001",
-    "component": "GovernanceEncoder",
-    "version": "0.1.0",
-    "outputs": {
-        "code": "source/encoders/governance_encoder.py",
-        "tests": "test/test_governance_encoder.py",
-        "docs": "docs/encoders/governance_encoder.md"
-    },
-    "interface": {
-        "input_shape": "(batch_size, policy_tokens)",
-        "output_shape": "(batch_size, 1024)",
-        "latency_p99": "45ms"
-    },
-    "validation_status": "passed",
-    "test_coverage": "94%",
-    "dependencies_used": ["torch", "transformers"]
-}
-```
-
-### 8. Update Task Queue (CRITICAL!)
-
-When complete, mark the task as done:
 ```bash
 python3 << 'PYEOF'
 import json
 from datetime import datetime
 
-# Replace with your task ID
-TASK_ID = "LSA-001"
+TASK_ID = "EGA-001"  # Your task
 
 with open('tasks/task_queue.json') as f:
     queue = json.load(f)
 
-# Find and update task
-for status in ['ready', 'in_progress', 'pending']:
+# Move from ready/in_progress to completed
+for status in ['ready', 'in_progress']:
     for i, task in enumerate(queue.get(status, [])):
-        if task['id'] == TASK_ID:
+        if task.get('id') == TASK_ID:
             task['status'] = 'completed'
             task['completed_at'] = datetime.now().isoformat()
             queue['completed'].append(task)
             queue[status].pop(i)
-            print(f"✓ Marked {TASK_ID} as completed")
             break
 
 # Check for newly ready tasks
-completed_set = {t['id'] for t in queue['completed']}
+completed_ids = {t['id'] for t in queue['completed']}
 newly_ready = []
 
 for task in list(queue.get('pending', [])):
-    deps = set(task.get('dependencies', []))
-    if deps.issubset(completed_set):
+    deps = set(task.get('depends_on', []))
+    if deps.issubset(completed_ids):
         task['status'] = 'ready'
+        task.pop('blocked_by', None)
         newly_ready.append(task)
-      print(f"→ {task['id']} is now ready")
+        queue['ready'].append(task)
 
-# Update queue
-queue['pending'] = [t for t in queue.get('pending', []) if t not in newly_ready]
-queue['ready'].extend(newly_ready)
+queue['pending'] = [t for t in queue['pending'] if t not in newly_ready]
 
 with open('tasks/task_queue.json', 'w') as f:
     json.dump(queue, f, indent=2)
 
-print(f"\n✓ Updated task_queue.json")
+print(f"✓ Marked {TASK_ID} complete")
+if newly_ready:
+    print(f"\nNewly ready tasks:")
+    for t in newly_ready:
+        print(f"  {t['id']}: {t['component']}")
 PYEOF
 ```
 
-### 9. Create Pull Request
+### 7. Create PR
+
 ```bash
-# Commit your work
 git add .
 git commit -m "Implement <Component> (<TASK-ID>)
 
-Implements task <TASK-ID> from task queue.
+Implements <TASK-ID> per PRD section: <PRD-SECTION>
 
-Changes:
-- Implemented <Component> in source/
-- Added comprehensive tests (>90% coverage)
-- Created documentation
-- Generated artifact manifest
+Components:
+- <Component implementation>
+- Comprehensive tests (>90% coverage)
+- Documentation
 
-All tepass. Ready for review."
+All acceptance criteria met."
 
-# Push and create PR
 git push -u origin HEAD
 
 gh pr create \
   --title "Implement <Component> (<TASK-ID>)" \
-  --body "Implements <TASK-ID>.
+  --body "Per PRD: <PRD-SECTION>
 
-**Outputs:**
-- Implementation: source/path/to/file.py
-- Tests: test/test_file.py
-- Documentation: docs/path/to/doc.md
-- Artifact: outputs/workstream/TASK-ID_artifact.json
+**Implementation:**
+- Component as specified in PRD
+- Tests verify all requirements
+- Documentation complete
 
 **Validation:**
-- ✅ All tests pass
-- ✅ Coverage >90%
-- ✅ Task queue updated
-- ✅ Dependencies satisfied"
+✅ Tests pass
+✅ PRD requirements met
+✅ Task queue updated"
 ```
 
-### 10. Pre-PR Checklist
+## Key Principle
 
-Before creating PR:
-- [ ] All required files created
-- [ ] Tests pass: `uv run pytest test/test_*.py -v`
-- [ ] Code follows Python standards (type hints, docstrings)
-- [ ] Artifact manifest created and valid
-- [ ] Task dated (task marked completed)
-- [ ] Dependencies properly declared in pyproject.toml
-- [ ] Documentation is clear and complete
+**PRD = Requirements**
+**Task Queue = State**
+
+- ✅ Read PRD for "what to build"
+- ✅ Read task queue for "what's done"
+- ❌ Don't expect task queue to have detailed specs
+
+## Example Workflow
+
+```bash
+# 1. Assigned: EGA-001
+# 2. Read task queue → prd_section: "docs/WORK-DISTRIBUTION.md#energy-geometry"
+# 3. Read PRD section → learn about E_hierarchy
+# 4. Implement per PRD architecture
+# 5. Create tests, docs, artifact
+# 6. Update task queue
+# 7. Create PR
+```
 
 ## Resources
 
-- **Task definitions**: `tasks/task_queue.json`
-- **Project requirements**: `docs/PRD.md`
-- **Workstream details**: `docs/WORK-DISTRIBUTION.md`
-- **Coding standards**: `CLAUDE.md` (if exists)
-- **Acceptance criteria**: `acceptance_criteria/<type>.json`
+- **Requirements**: `docs/PRD.md`, `docs/WORK-DISTRIBUTION.md`
+- **Architecture**: `docs/ARCHITECTURE.md`
+- **State**: `tasks/task_queue.json`
+- **Standards**: `CLAUDE.md`
 
-## When Stuck
-
-1. Check if dependencies are actually merged
-2. Review similar completed tasks for patterns
-3. Ask supervisor: `multiclaude agent send-message supervisor "Need help with <issue>"`
-4. Search for current best practices online
-5. Review the PRD and requirements again
-
-## Quality Standards
-
-This is production code for a research project. High standards apply:
-- Comprehensive testing (not just smoke tests)
-- Clear documentation (others will use this)
-- Proper error handling
-- Type safety where possible
-- Performance considerations (latency requirements)
-
-Work autonomously but thoughtfully. Take time to do it right.
+Work autonomously. The PRD has everything you need.
