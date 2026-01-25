@@ -6,24 +6,23 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     # Multi-agent system dependencies
-    "networkx>=3.0", # Dependency graph management
-    "anthropic>=0.18.0", # API-based autonomous agents
-    "matplotlib>=3.7.0", # Graph visualization
+    "networkx>=3.0",        # Dependency graph management
+    "anthropic>=0.18.0",    # API-based autonomous agents
+    "matplotlib>=3.7.0",    # Graph visualization
     # JEPA encoder dependencies
-    "torch>=2.5.0", # PyTorch for neural networks
+    "torch>=2.5.0",         # PyTorch for neural networks
     "transformers>=4.46.0", # Hugging Face transformers
-    "datasets>=3.0.0",      # Hugging Face datasets
+    "datasets>=3.2.0",      # Hugging Face datasets for conversation sampling
     "python-dotenv>=1.0.0", # Environment variable management
-    "pyyaml>=6.0.0", # YAML parsing for policies
-    "pydantic>=2.10.0", # Type validation and serialization
-    "numpy>=2.0.0", # Numerical operations
+    "pyyaml>=6.0.0",        # YAML parsing for policies
+    "pydantic>=2.10.0",     # Type validation and serialization
+    "numpy>=2.0.0",         # Numerical operations
     # Testing dependencies
-    "pytest>=8.3.0", # Testing framework
-    "pytest-cov>=6.0.0", # Coverage reporting
-    "pytest-benchmark>=5.1.0", # Performance benchmarking
-    "psutil>=6.1.1", # Process and system monitoring
-    "types-pyyaml>=6.0.0", # Type stubs for PyYAML
-    "datasets>=4.5.0",
+    "pytest>=8.3.0",        # Testing framework
+    "pytest-cov>=6.0.0",    # Coverage reporting
+    "pytest-benchmark>=5.1.0",  # Performance benchmarking
+    "psutil>=6.1.1",        # Process and system monitoring
+    "types-pyyaml>=6.0.0",  # Type stubs for PyYAML
 ]
 
 [project.optional-dependencies]
