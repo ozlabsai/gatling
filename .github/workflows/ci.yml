@@ -98,6 +98,7 @@ jobs:
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
       if: always()
+      continue-on-error: true  # Don't fail CI if benchmark storage fails
       with:
         tool: 'pytest'
         output-file-path: benchmark.json
