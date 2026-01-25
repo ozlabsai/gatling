@@ -1,6 +1,6 @@
 ## **Project Gatling: Energy-Based Integrity for Agentic Systems**
 
-**Version:** 1.3 (January 2026)
+**Version:** 1 (January 2026)
 
 **Objective:** A non-generative, energy-guided integrity layer that audits and repairs agentic tool-use plans by measuring semantic consistency between governance policies and execution intent.
 
