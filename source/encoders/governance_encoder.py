@@ -22,7 +22,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import yaml
+import yaml  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field, field_validator
 
 
