@@ -60,7 +60,6 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="noop",
                     node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
@@ -85,8 +84,13 @@ class TestScopeEnergy:
                     tool_name="list_items",
                     node_id="node1",
                     arguments={"limit": 1},
+                    provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1  # Min valid value
+                )
+            ],
+            edges=[]
+        )
 
         minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
@@ -140,8 +144,6 @@ class TestScopeEnergy:
 
         # Define minimal scope that matches the plan
         minimal_scope = ScopeConstraints(
-            limit=1,
-        minimal_scope = ScopeConstraints(
             limit=1,  # User only needs 1 invoice
             date_range_days=1,
             max_depth=1,
@@ -162,8 +164,15 @@ class TestScopeEnergy:
                     tool_name="list_invoices",
                     node_id="node1",
                     arguments={"limit": 1000},
+                    provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1000,
                     scope_sensitivity=1
+                )
+            ],
+            edges=[]
+        )
+
+        minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
 
         # Over-scope of 9999 should create high energy
@@ -188,10 +197,7 @@ class TestScopeEnergy:
             edges=[]
         )
 
-        # Minimal scope for "latest invoice" is just 1
-        minimal_scope = ScopeConstraints(
-            limit=1,
-            date_range_days=30,
+        # Minimal scope for "this week's sales"
         minimal_scope = ScopeConstraints(
             limit=100,
             date_range_days=7,  # One week
@@ -217,11 +223,6 @@ class TestScopeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="get_transactions",
-                    node_id="node1",
-                    arguments={"limit": 10, "days": 365},
-                    scope_volume=10,
-                    scope_sensitivity=1
                     tool_name="traverse_directory",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
@@ -265,11 +266,6 @@ class TestScopeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="get_user_data",
-                    node_id="node1",
-                    arguments={"include_ssn": True, "include_financial": True},
-                    scope_volume=1,
-                    scope_sensitivity=5  # Max sensitivity
                     tool_name="get_user_profile",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
@@ -303,12 +299,15 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="search_records",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 100, "days": 90, "depth": 3},
                     scope_volume=100,
                     scope_sensitivity=1
                 )
             ],
             edges=[]
+        )
+
         minimal_scope = ScopeConstraints(
             limit=1,
             max_depth=1,
