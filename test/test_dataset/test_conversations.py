@@ -269,7 +269,7 @@ class TestPlanTransformer:
             ),
         )
 
-        policy = SystemPolicy(
+        policy = SystemPolicy(description="Test policy",
             policy_id="policy_1",
             domain="Finance",
             rules=["Rule 1"],
@@ -360,7 +360,7 @@ class TestAdversarialMutator:
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
             ),
-            inferred_policy=SystemPolicy(
+            inferred_policy=SystemPolicy(description="Test policy",
                 policy_id="policy_1",
                 domain="Finance",
                 rules=[],
@@ -434,7 +434,7 @@ class TestAdversarialMutator:
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
             ),
-            inferred_policy=SystemPolicy(
+            inferred_policy=SystemPolicy(description="Test policy",
                 policy_id="policy_1",
                 domain="Finance",
                 rules=[],
@@ -485,7 +485,7 @@ class TestAdversarialMutator:
                     rows_requested=5,
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
-                provenance=Provenance(
+                provenance=ProvenancePointer(
                     source_type=TrustTier.USER,
                     source_id="user_1",
                 ),
@@ -511,7 +511,7 @@ class TestAdversarialMutator:
                         sensitivity_tier=SensitivityTier.INTERNAL,
                     ),
                 ),
-                inferred_policy=SystemPolicy(
+                inferred_policy=SystemPolicy(description="Test policy",
                     policy_id="policy_1",
                     domain="Finance",
                     rules=[],
@@ -561,7 +561,7 @@ class TestAdversarialMutator:
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
             ),
-            inferred_policy=SystemPolicy(
+            inferred_policy=SystemPolicy(description="Test policy",
                 policy_id="policy_1",
                 domain="Finance",
                 rules=[],
