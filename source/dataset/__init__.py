@@ -6,6 +6,12 @@ Synthetic Integrity Dataset (SID) workstream. It generates 4M benign
 tool-use traces using Oracle Agents across 50+ domains.
 """
 
+from source.dataset.loaders import (
+    AgentHarmLoader,
+    DatasetLoader,
+    DatasetSample,
+    load_agent_harm,
+)
 from source.dataset.models import (
     ToolCall,
     ToolCallGraph,
@@ -22,4 +28,8 @@ __all__ = [
     "GoldTrace",
     "SystemPolicy",
     "ToolSchema",
+    "AgentHarmLoader",
+    "DatasetLoader",
+    "DatasetSample",
+    "load_agent_harm",
 ]

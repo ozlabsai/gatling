@@ -151,6 +151,64 @@ This module integrates with:
 - **Quality**: 98%+ validation pass rate
 - **Diversity**: 50+ domains, 6 intent categories, 245 unique tools
 
+## External Dataset Loaders
+
+The `loaders.py` module provides adapters to load external safety datasets into Gatling's ExecutionPlan format for training.
+
+### AgentHarm Dataset
+
+Load the ai-safety-institute/AgentHarm dataset (468 adversarial safety samples):
+
+```python
+from source.dataset.loaders import load_agent_harm
+
+# Load dataset
+for sample in load_agent_harm():
+    execution_plan = sample.execution_plan  # ExecutionPlan with tool calls
+    label = sample.label  # "harmful" or "benign"
+    category = sample.category  # "Disinformation", "Fraud", etc.
+
+    # Train energy model
+    energy = model(execution_plan)
+```
+
+#### Dataset Statistics
+
+- **Total samples**: 416 with tool calls (208 harmful + 208 benign)
+- **Categories**: Disinformation, Fraud, Privacy, Malware, Cybercrime, etc.
+- **Transformation rate**: >95% successful validation
+- **Provenance mapping**:
+  - Harmful samples → TrustTier.PUBLIC_WEB (Tier 3 - untrusted)
+  - Benign samples → TrustTier.INTERNAL (Tier 1 - trusted)
+
+#### Custom Loading
+
+```python
+from source.dataset.loaders import AgentHarmLoader
+
+loader = AgentHarmLoader(
+    cache_dir="~/.cache/gatling/datasets",
+    include_chat=False  # Exclude text-only samples
+)
+
+# Load and get statistics
+samples = list(loader.load())
+stats = loader.get_stats()
+print(f"Loaded {stats['successful_transforms']} samples")
+```
+
+### Adding New Dataset Loaders
+
+To add a new external dataset:
+
+1. Subclass `DatasetLoader` in `loaders.py`
+2. Implement `load()` to yield `DatasetSample` objects
+3. Transform source format to `ExecutionPlan` with proper metadata
+4. Add tests in `test/test_dataset/test_loaders.py`
+5. Update this README with usage examples
+
+See `AgentHarmLoader` for a complete implementation example.
+
 ## Future Work
 
 - [ ] Distributed generation across multiple API keys
@@ -158,3 +216,4 @@ This module integrates with:
 - [ ] Domain-specific fine-tuning of Oracle prompts
 - [ ] Interactive validation UI
 - [ ] Automated schema discovery from OpenAPI specs
+- [ ] Additional dataset loaders (LLMail-Inject, MACHIAVELLI, etc.)
