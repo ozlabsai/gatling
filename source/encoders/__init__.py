@@ -5,6 +5,13 @@ This module implements the JEPA (Joint-Embedding Predictive Architecture) encode
 for Project Gatling's energy-based security system.
 """
 
+from .execution_encoder import ExecutionEncoder, ExecutionPlan, ToolCallNode, TrustTier
 from .governance_encoder import GovernanceEncoder
 
-__all__ = ["GovernanceEncoder"]
+__all__ = [
+    "GovernanceEncoder",
+    "ExecutionEncoder",
+    "ExecutionPlan",
+    "ToolCallNode",
+    "TrustTier",
+]
