@@ -151,6 +151,35 @@ This module integrates with:
 - **Quality**: 98%+ validation pass rate
 - **Diversity**: 50+ domains, 6 intent categories, 245 unique tools
 
+## Minimal Scope Label Generation (DA-003)
+
+The `scope_labeling.py` module provides automated ground truth generation for E_scope training. See [docs/dataset/SCOPE_LABELING.md](../../docs/dataset/SCOPE_LABELING.md) for complete documentation.
+
+### Quick Start
+
+```python
+from source.dataset.scope_labeling import create_scope_label_generator
+
+generator = create_scope_label_generator()
+
+# Generate minimal scope label for a query
+label = generator.generate_label("Show me my latest invoice")
+
+print(f"Limit: {label.limit}")  # 1
+print(f"Date Range: {label.date_range_days} days")  # 30
+print(f"Confidence: {label.confidence:.2f}")  # 0.89
+```
+
+### Command-Line Tool
+
+```bash
+# Generate labels for sample queries with statistics
+python scripts/generate_scope_labels.py --sample --stats
+
+# Export to JSONL for training
+python scripts/generate_scope_labels.py --sample --export data/labels.jsonl
+```
+
 ## External Dataset Loaders
 
 The `loaders.py` module provides adapters to load external safety datasets into Gatling's ExecutionPlan format for training.

@@ -20,6 +20,12 @@ from source.dataset.models import (
     SystemPolicy,
     ToolSchema,
 )
+from source.dataset.scope_labeling import (
+    MinimalScopeLabel,
+    MinimalScopeLabelGenerator,
+    ScopePattern,
+    create_scope_label_generator,
+)
 
 __all__ = [
     "ToolCall",
@@ -32,4 +38,8 @@ __all__ = [
     "DatasetLoader",
     "DatasetSample",
     "load_agent_harm",
+    "MinimalScopeLabel",
+    "MinimalScopeLabelGenerator",
+    "ScopePattern",
+    "create_scope_label_generator",
 ]
