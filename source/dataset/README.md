@@ -20,6 +20,7 @@ source/dataset/
 ├── __init__.py           # Module exports
 ├── models.py             # Core data models (GoldTrace, ToolCall, etc.)
 ├── generator.py          # Main orchestrator for 4M trace generation
+├── scope_labeler.py      # Minimal scope label generation for E_scope training
 ├── oracle/               # Oracle Agent implementation
 │   ├── __init__.py
 │   ├── agent.py         # High-quality AI agent
@@ -91,6 +92,27 @@ is_valid, report = validator.validate_trace(trace)
 
 # Validate dataset diversity
 metrics = validator.validate_dataset_diversity(traces)
+```
+
+### ScopeLabeler
+Generates minimal scope labels for E_scope training
+
+```python
+from source.dataset.scope_labeler import ScopeLabeler, label_traces_batch
+
+# Label a single trace
+labeler = ScopeLabeler()
+scope_label = labeler.label_trace(trace)
+# → ScopeConstraints(limit=1, date_range_days=30, max_depth=1, include_sensitive=False)
+
+# Batch label traces for training
+labeled_data = label_traces_batch(gold_traces)
+for trace, scope_constraints in labeled_data:
+    # Use for training SemanticIntentPredictor
+    training_sample = {
+        "query": trace.request.text,
+        "minimal_scope": scope_constraints.model_dump()
+    }
 ```
 
 ## Data Flow
