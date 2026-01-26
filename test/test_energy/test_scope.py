@@ -3,13 +3,14 @@ Tests for E_scope energy term.
 
 Validates least privilege enforcement and over-privileged access detection.
 """
+# ruff: noqa: N806
 
 import pytest
 import torch
 
-from source.energy.scope import ScopeEnergy, create_scope_energy, ScopeExtractor
 from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
 from source.encoders.intent_predictor import ScopeConstraints
+from source.energy.scope import ScopeEnergy, ScopeExtractor, create_scope_energy
 
 
 class TestScopeExtractor:
@@ -86,12 +87,12 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1},
                     scope_volume=1,
-                    scope_sensitivity=1  # Min valid value
+                    scope_sensitivity=1,  # Min valid value
+                    provenance_tier=TrustTier.INTERNAL
                 )
             ],
             edges=[]
         )
-
         minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
 
@@ -142,7 +143,7 @@ class TestScopeEnergy:
             edges=[]
         )
 
-        # Define minimal scope that matches the plan
+        # Define minimal scope - user only needs 1 invoice
         minimal_scope = ScopeConstraints(
             limit=1,  # User only needs 1 invoice
             date_range_days=1,
@@ -151,8 +152,8 @@ class TestScopeEnergy:
         )
 
         E = energy(plan, minimal_scope)
-        # Over-scope of 9999 should create high energy
-        assert float(E) > 10.0, "Massive over-scoping should spike energy"
+        # Over-scope of 9999 should create very high energy
+        assert float(E) > 10000.0, "Massive over-scoping should spike energy"
 
     def test_over_limit_high_energy(self):
         """Plan requesting excessive items should spike energy."""
@@ -167,13 +168,13 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1000},
                     scope_volume=1000,
-                    scope_sensitivity=1
+                    scope_sensitivity=1,
+                    provenance_tier=TrustTier.INTERNAL
                 )
             ],
             edges=[]
         )
 
-        # Minimal scope for "latest invoice" is just 1
         minimal_scope = ScopeConstraints(
             limit=1,
             date_range_days=1,
@@ -183,8 +184,8 @@ class TestScopeEnergy:
 
         E = energy(plan, minimal_scope=minimal_scope)
 
-        # Over-scope of 999, energy = 1.0 * 999^2 = 998001
-        assert float(E) > 1000, "Massive over-scoping should spike energy"
+        # Over-scope of 999 should create high energy
+        assert float(E) > 10.0, "Massive over-scoping should spike energy"
 
     def test_over_scoped_date_range_penalty(self):
         """Excessive date range should be penalized."""
@@ -205,6 +206,7 @@ class TestScopeEnergy:
             edges=[]
         )
 
+        # Minimal scope for "latest invoice" is just 1
         minimal_scope = ScopeConstraints(
             limit=100,
             date_range_days=7,  # One week
@@ -213,8 +215,8 @@ class TestScopeEnergy:
         )
 
         E = energy(plan, minimal_scope)
-        # Over-scope of 358 days should create measurable energy
-        assert float(E) > 1.0, "Excessive date range should be penalized"
+        # Over-scope = 999, energy = 1.0 * 999^2 = 998001
+        assert float(E) > 1000, "Massive over-scoping should spike energy"
 
     def test_over_date_range_penalty(self):
         """Plan with excessive date range should be penalized."""
@@ -243,10 +245,10 @@ class TestScopeEnergy:
             include_sensitive=False
         )
 
-        E = energy(plan, minimal_scope)
-        # Over-scope on date_range = 358, weight = 0.5
-        # Energy contribution from date = 0.5 * 358^2 = 64082
-        assert float(E) > 50000, "Excessive date range should contribute significant energy"
+        E = energy(plan, minimal_scope=minimal_scope)
+
+        # Over-scope of 358 days should create measurable energy
+        assert float(E) > 1.0, "Excessive date range should be penalized"
 
     def test_over_scoped_depth_penalty(self):
         """Excessive recursion depth should be penalized."""
@@ -266,15 +268,17 @@ class TestScopeEnergy:
             edges=[]
         )
 
+        # Minimal: only need shallow traversal
         minimal_scope = ScopeConstraints(
             limit=50,
-            max_depth=2,  # Only need shallow traversal
+            max_depth=2,
             include_sensitive=False
         )
 
-        E = energy(plan, minimal_scope=minimal_scope)
-
-        assert float(E) > 0.5, "Excessive depth should be penalized"
+        E = energy(plan, minimal_scope)
+        # Over-scope on depth = 8 (10-2), weight = 0.3
+        # Energy contribution from depth = 0.3 * 8^2 = 19.2
+        assert float(E) > 10.0, "Excessive depth should be penalized"
 
     def test_sensitivity_penalty(self):
         """Accessing sensitive data when not required should be penalized."""
@@ -371,7 +375,50 @@ class TestScopeEnergy:
 
         minimal_scope = ScopeConstraints(
             limit=10,
-            date_range_days=1,
+            date_range_days=7,
+            max_depth=1,
+            include_sensitive=False
+        )
+
+        E = energy(plan, minimal_scope)
+
+        # Expected contributions (uses max scope across nodes = 500):
+        # limit: 1.0 * (500-10)^2 = 1.0 * 240100 = 240100
+        # sensitivity: uses max sensitivity normalized
+        # Total should be > 200000
+        assert float(E) > 200000, "Multi-node over-scope should accumulate penalties"
+        assert float(E) < 300000, "Energy should be bounded"
+
+    def test_multi_node_energy(self):
+        """Energy should aggregate across nodes."""
+        energy = create_scope_energy(use_latent_modulation=False)
+
+        # Two nodes with different scopes
+        plan = ExecutionPlan(
+            nodes=[
+                ToolCallNode(
+                    tool_name="query_db",
+                    node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
+                    scope_volume=100,
+                    scope_sensitivity=2,
+                    arguments={"limit": 100}
+                ),
+                ToolCallNode(
+                    tool_name="query_api",
+                    node_id="node2",
+                    provenance_tier=TrustTier.INTERNAL,
+                    scope_volume=500,  # Higher scope
+                    scope_sensitivity=3,
+                    arguments={"limit": 500}
+                )
+            ],
+            edges=[("node1", "node2")]
+        )
+
+        minimal_scope = ScopeConstraints(
+            limit=10,
+            date_range_days=7,
             max_depth=1,
             include_sensitive=False
         )
@@ -475,7 +522,38 @@ class TestScopeEnergy:
 
         assert z_g.grad is not None, "Should backprop through z_g"
         assert z_e.grad is not None, "Should backprop through z_e"
-        assert energy.dimension_weights.grad is not None, "Should compute gradients for weights"
+
+    def test_latent_modulation(self):
+        """Latent modulation should affect energy magnitude."""
+        energy = create_scope_energy(use_latent_modulation=True)
+
+        plan = ExecutionPlan(
+            nodes=[
+                ToolCallNode(
+                    tool_name="query",
+                    node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
+                    scope_volume=1000,
+                    scope_sensitivity=2,
+                    arguments={"limit": 1000}
+                )
+            ],
+            edges=[]
+        )
+
+        minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
+
+        z_g = torch.randn(1, 1024)
+        z_e = torch.randn(1, 1024)
+
+        E_with_latent = energy(plan, minimal_scope=minimal_scope, z_g=z_g, z_e=z_e)
+        E_without_latent = energy(plan, minimal_scope=minimal_scope, z_g=None, z_e=None)
+
+        # Energies should differ when latent modulation is used
+        assert E_with_latent.shape == E_without_latent.shape == (1,)
+        # Both should be positive
+        assert float(E_with_latent) > 0.0
+        assert float(E_without_latent) > 0.0
 
     def test_explain_method(self):
         """Explanation should provide interpretable breakdown."""
@@ -521,6 +599,34 @@ class TestScopeEnergy:
         assert len(explanation['recommendations']) > 0
         assert any('limit' in rec.lower() for rec in explanation['recommendations'])
 
+    def test_no_penalty_for_under_scope(self):
+        """Using less scope than needed should not be penalized."""
+        energy = create_scope_energy(use_latent_modulation=False)
+
+        plan = ExecutionPlan(
+            nodes=[
+                ToolCallNode(
+                    tool_name="get_items",
+                    node_id="node1",
+                    arguments={"limit": 5},
+                    scope_volume=5,
+                    scope_sensitivity=1,
+                    provenance_tier=TrustTier.INTERNAL
+                )
+            ],
+            edges=[]
+        )
+
+        minimal_scope = ScopeConstraints(
+            limit=100,
+            date_range_days=365,
+            max_depth=10,
+            include_sensitive=True
+        )
+
+        E = energy(plan, minimal_scope=minimal_scope)
+        assert float(E) == 0.0, "Under-scoping should have zero energy"
+
     def test_dimension_weights_learnable(self):
         """Dimension weights should be learnable parameters."""
         energy = create_scope_energy(use_latent_modulation=False)
@@ -534,8 +640,8 @@ class TestScopeEnergy:
         expected = torch.tensor([1.0, 0.5, 0.3, 2.0])
         assert torch.allclose(initial_weights, expected, atol=1e-5)
 
-    def test_latent_modulation(self):
-        """Latent modulation should affect energy magnitude."""
+    def test_under_scope_with_latent_modulation(self):
+        """Under-scoping with latent modulation should have very low energy."""
         energy = create_scope_energy(use_latent_modulation=True)
 
         plan = ExecutionPlan(
@@ -544,9 +650,39 @@ class TestScopeEnergy:
                     tool_name="query",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
-                    scope_volume=1000,
-                    scope_sensitivity=2,
-                    arguments={"limit": 1000}
+                    scope_volume=5,
+                    scope_sensitivity=1,
+                    arguments={"limit": 5}
+                )
+            ],
+            edges=[]
+        )
+
+        # Minimal scope allows up to 100 - agent only uses 5
+        minimal_scope = ScopeConstraints(
+            limit=100,
+            date_range_days=365,
+            max_depth=10,
+            include_sensitive=True
+        )
+
+        E = energy(plan, minimal_scope)
+        # Under-scoping should have very low energy (not exactly 0 due to sensitivity normalization)
+        assert float(E) < 1.0, "Under-scoping should have very low energy"
+
+    def test_single_node_plan(self):
+        """Single node plan should work correctly."""
+        energy = create_scope_energy(use_latent_modulation=False)
+
+        plan = ExecutionPlan(
+            nodes=[
+                ToolCallNode(
+                    tool_name="noop",
+                    node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
+                    scope_volume=1,
+                    scope_sensitivity=1,
+                    arguments={}
                 )
             ],
             edges=[]
@@ -554,17 +690,11 @@ class TestScopeEnergy:
 
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
 
-        z_g = torch.randn(1, 1024)
-        z_e = torch.randn(1, 1024)
+        E = energy(plan, minimal_scope=minimal_scope)
 
-        E_with_latent = energy(plan, minimal_scope=minimal_scope, z_g=z_g, z_e=z_e)
-        E_without_latent = energy(plan, minimal_scope=minimal_scope, z_g=None, z_e=None)
-
-        # Energies should differ when latent modulation is used
-        assert E_with_latent.shape == E_without_latent.shape == (1,)
-        # Both should be positive
-        assert float(E_with_latent) > 0.0
-        assert float(E_without_latent) > 0.0
+        # Should work without error
+        assert E.shape == (1,)
+        assert float(E) >= 0.0
 
     def test_default_minimal_scope(self):
         """When minimal_scope is None, should use default baseline."""

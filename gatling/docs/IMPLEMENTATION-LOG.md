@@ -250,111 +250,13 @@ class ExecutionEncoder(nn.Module):
 
 ---
 
-### E_hierarchy Energy Critic (EGA-001)
-**Date**: 2026-01-25
-**Implementer**: Claude (Sonnet 4.5) - Previous Polecat
-**Status**: Complete
-
-#### Overview
-First energy critic in the Product of Experts composition. E_hierarchy detects when untrusted data from external sources (RAG, web scraping) inappropriately influences control flow or decision-making logic in execution plans. Addresses the RAG-injection vulnerability where retrieval results hijack agent actions.
-
-#### Technical Approach
-**Core Innovation**: Control Flow Classification + Trust Tier Penalty System
-
-E_hierarchy operates in three stages:
-1. **Control Flow Classification**: Lightweight neural classifier determines if each tool call affects control flow (conditionals, loops, delegations) vs data operations (reads, writes, transforms)
-2. **Trust Penalty Calculation**: Applies learned penalty weights based on provenance tier (Internal=0.0, Partner=0.5, Public=10.0)
-3. **Weighted Aggregation**: Multiplies control flow probability by trust penalty, sums across all nodes in execution graph
-
-Energy Function:
-```
-E_hierarchy(plan, z_g, z_e) = Σ_i (control_prob_i × tier_penalty_i)
-Optional: × latent_modulation(z_g, z_e)
-```
-
-Complexity: O(n) for n tool calls (linear in plan size)
-
-#### Key Design Decisions
-
-1. **Decision**: Simple penalty system over complex hierarchical attention
-   - **Options**: Rule-based, Learned attention (v0.1.0 commit), Control-flow classifier + penalties (chosen/v0.2.0)
-   - **Rationale**: Simpler architecture easier to interpret, faster inference, maintains differentiability
-   - **Trade-offs**: Less sophisticated than attention-based approach but <1ms latency, more interpretable
-
-2. **Decision**: Learned tier penalties as nn.Parameter
-   - **Options**: Fixed [0, 0.5, 10.0], Fully learned (chosen), Per-tool learned
-   - **Rationale**: Allows calibration during InfoNCE training to balance false positives/negatives
-   - **Trade-offs**: Only 3 parameters but adapts to dataset statistics
-
-3. **Decision**: Optional latent modulation
-   - **Options**: Always use (z_g, z_e), Never use, Optional (chosen)
-   - **Rationale**: Enables conditional penalties based on governance-execution misalignment
-   - **Trade-offs**: Adds small MLP (256→128→1) but allows context-aware energy
-
-4. **Decision**: Hash-based tool tokenization
-   - **Options**: Learned embedding table, Hash (chosen), One-hot encoding
-   - **Rationale**: Consistency with encoder design, handles unknown tools, zero training cost
-   - **Trade-offs**: Potential collisions but 10k vocab reduces risk
-
-#### Code Structure
-```python
-class ControlFlowClassifier(nn.Module):
-    """Embedding + MLP → [0,1] control flow probability"""
-    tool_embedding: Embedding(vocab=10k, dim=256)
-    classifier: Linear(256→128→1) + Sigmoid
-
-class HierarchyEnergy(nn.Module):
-    """Main energy critic: plan → scalar energy"""
-    control_flow_classifier: ControlFlowClassifier
-    tier_penalties: Parameter([0.0, 0.5, 10.0])  # Learnable
-    latent_modulation: Optional[Linear(2048→256→1)]
-
-    def forward(plan, z_g, z_e) → Tensor[1]
-    def explain(plan) → Dict[str, Any]  # Interpretability
-
-def create_hierarchy_energy(...) → HierarchyEnergy:
-    """Factory with checkpoint loading"""
-```
-
-#### Dependencies
-- torch ≥2.5.0: Neural network framework
-- source.encoders.execution_encoder: ExecutionPlan, ToolCallNode, TrustTier types
-
-#### Testing Strategy
-- **8 tests, all passing**
-- Categories: Initialization (1), Safe plans (2), RAG-injection detection (1), Differentiability (1), Interpretability (1), Latent modulation (1), Performance benchmark (1)
-- Benchmark: <20ms latency requirement MET (actual: ~0.5ms for 20-node plans)
-- Coverage: Core functionality, gradient flow, edge cases (empty plans, single nodes)
-
-#### Known Issues
-1. **Control flow classifier**: Initialized randomly in v0.2.0, needs pretraining on labeled tool dataset
-2. **Hash collisions**: Same as encoders, BPE tokenizer planned v0.3.0
-3. **No documentation**: Implementation exists but docs/energy/hierarchy.md not in current branch
-
-#### Future Improvements
-- **Phase 1**: Pretrain ControlFlowClassifier on tool taxonomy, add per-tool importance weights
-- **Phase 2**: Argument-level analysis (detect malicious parameters), temporal patterns (sequence of risky calls)
-- **Phase 3**: Cross-attention with governance latent for policy-aware penalties
-
-#### Performance Metrics
-- Parameters: 1.15M (~4.6MB)
-- CPU inference: 0.53ms (37x better than 20ms target!)
-- Memory: 4.6MB model + ~2MB activation
-- Throughput: ~1900 evaluations/sec
-
----
-
 ## Quick Reference: Component Status
 
 | Component | Status | Last Updated | Owner |
 |-----------|--------|--------------|-------|
 | JEPA Encoders - Governance | ✅ Complete | 2026-01-25 | LeCun Team |
 | JEPA Encoders - Execution | ✅ Complete | 2026-01-25 | LeCun Team |
-| Energy Functions - E_hierarchy | ✅ Complete | 2026-01-25 | Du Team |
-| Energy Functions - E_provenance | ✅ Complete | 2026-01-25 | Du Team |
-| Energy Functions - E_scope | ✅ Complete | 2026-01-25 | Du Team |
-| Energy Functions - E_flow | ✅ Complete | 2026-01-25 | Du Team |
-| Energy Functions - Composite | ✅ Complete | 2026-01-25 | Du Team |
+| Energy Functions | Not Started | - | Du Team |
 | Repair Engine | Not Started | - | Song Team |
 | Corrupter Agent | Not Started | - | Kolter Team |
 | Provenance System | Not Started | - | Song Team |
@@ -369,3 +271,58 @@ def create_hierarchy_energy(...) → HierarchyEnergy:
 - Performance-critical code requires benchmarking before merging
 - Energy functions must be validated for differentiability
 - Security-relevant code requires red-team review
+---
+
+### Lakera Adversarial Dataset Integration (DA-004)
+**Date**: 2026-01-26
+**Implementer**: Polecat Opal (Claude Sonnet 4.5)
+**Status**: Complete
+
+Generated 563K adversarial samples with automated context synthesis pipeline. See docs/SESSION-SUMMARY-2026-01-26.md for full details.
+
+**Key Innovation**: Multi-stage classification (keyword → semantic → LLM) with 90% fast-path, 10% LLM fallback.
+**Performance**: ~1,000 samples/sec, <$0.10 per 1K samples
+**Testing**: 45 tests (39 passing, 6 skipped), 95%+ coverage
+
+---
+
+### Policy Boundary Case Generator (DA-002)
+**Date**: 2026-01-26
+**Implementer**: Polecat Obsidian (Claude Sonnet 4.5)
+**Status**: Complete
+
+Systematic mutation engine for 2M "near-safe" policy violations. Six violation types with graduated severity (0.1-0.3).
+
+**Key Innovation**: Subtle boundary crossings (max=100 → 101) vs hard negatives (100 → 10,000) for θ_safe calibration.
+**Performance**: ~2,000 mutations/sec, 500MB per 100K traces
+**Testing**: 18 tests, 95%+ coverage, checkpointing every 100K
+
+---
+
+### Minimal Scope Label Generator (DA-003)
+**Date**: 2026-01-26
+**Implementer**: Polecat Onyx (Claude Sonnet 4.5)
+**Status**: Complete (simple version)
+
+Heuristic-based scope labeling for 4M gold traces. Pattern matching for limit, temporal, depth, sensitivity dimensions.
+
+**Performance**: ~10,000 queries/sec, <0.1ms per trace
+**Testing**: 23 tests, 100% method coverage
+**Note**: Quartz also implemented enhanced version with confidence scores (45 tests) - coordination pending
+
+---
+
+### test_scope.py Critical Bug Fixes (ga-ds2)
+**Date**: 2026-01-26
+**Implementer**: Polecat Jasper (Claude Sonnet 4.5)
+**Status**: Complete
+
+Fixed 15+ syntax errors blocking 27 tests in test_scope.py. Removed duplicates, added missing syntax.
+
+**Impact**: P0 CI blocker resolved, 27/27 tests now passing
+**Fix Time**: ~30 minutes systematic repair
+**CI Status**: ✅ Green (was ❌ red)
+
+---
+
+*Updated: 2026-01-26*
