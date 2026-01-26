@@ -60,7 +60,6 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="noop",
                     node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
@@ -84,9 +83,14 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="list_items",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1},
                     scope_volume=1,
                     scope_sensitivity=1  # Min valid value
+                )
+            ],
+            edges=[]
+        )
 
         minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
@@ -140,8 +144,6 @@ class TestScopeEnergy:
 
         # Define minimal scope that matches the plan
         minimal_scope = ScopeConstraints(
-            limit=1,
-        minimal_scope = ScopeConstraints(
             limit=1,  # User only needs 1 invoice
             date_range_days=1,
             max_depth=1,
@@ -149,7 +151,8 @@ class TestScopeEnergy:
         )
 
         E = energy(plan, minimal_scope)
-        assert float(E) < 0.5, "Perfect scope match should have low energy"
+        # Over-scope of 9999 should create high energy
+        assert float(E) > 10.0, "Massive over-scoping should spike energy"
 
     def test_over_limit_high_energy(self):
         """Plan requesting excessive items should spike energy."""
@@ -161,13 +164,27 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="list_invoices",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1000},
                     scope_volume=1000,
                     scope_sensitivity=1
+                )
+            ],
+            edges=[]
+        )
+
+        # Minimal scope for "latest invoice" is just 1
+        minimal_scope = ScopeConstraints(
+            limit=1,
+            date_range_days=1,
+            max_depth=1,
+            include_sensitive=False
+        )
+
         E = energy(plan, minimal_scope=minimal_scope)
 
-        # Over-scope of 9999 should create high energy
-        assert float(E) > 10.0, "Massive over-scoping should spike energy"
+        # Over-scope of 999, energy = 1.0 * 999^2 = 998001
+        assert float(E) > 1000, "Massive over-scoping should spike energy"
 
     def test_over_scoped_date_range_penalty(self):
         """Excessive date range should be penalized."""
@@ -188,10 +205,6 @@ class TestScopeEnergy:
             edges=[]
         )
 
-        # Minimal scope for "latest invoice" is just 1
-        minimal_scope = ScopeConstraints(
-            limit=1,
-            date_range_days=30,
         minimal_scope = ScopeConstraints(
             limit=100,
             date_range_days=7,  # One week
@@ -200,34 +213,23 @@ class TestScopeEnergy:
         )
 
         E = energy(plan, minimal_scope)
-        # Over-scope = 999, energy = 1.0 * 999^2 = 998001
-        assert float(E) > 1000, "Massive over-scoping should spike energy"
-
-    def test_over_date_range_penalty(self):
-        """Plan with excessive date range should be penalized."""
-        E = energy(plan, minimal_scope=minimal_scope)
-
         # Over-scope of 358 days should create measurable energy
         assert float(E) > 1.0, "Excessive date range should be penalized"
 
-    def test_over_scoped_depth_penalty(self):
-        """Excessive recursion depth should be penalized."""
+    def test_over_date_range_penalty(self):
+        """Plan with excessive date range should be penalized."""
         energy = create_scope_energy(use_latent_modulation=False)
 
+        # User asks for "this week's sales", agent requests entire year
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
                     tool_name="get_transactions",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 10, "days": 365},
                     scope_volume=10,
                     scope_sensitivity=1
-                    tool_name="traverse_directory",
-                    node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL,
-                    scope_volume=50,
-                    scope_sensitivity=1,
-                    arguments={"depth": 10}
                 )
             ],
             edges=[]
@@ -246,8 +248,24 @@ class TestScopeEnergy:
         # Energy contribution from date = 0.5 * 358^2 = 64082
         assert float(E) > 50000, "Excessive date range should contribute significant energy"
 
-    def test_sensitivity_penalty(self):
-        """Accessing sensitive data unnecessarily should spike energy."""
+    def test_over_scoped_depth_penalty(self):
+        """Excessive recursion depth should be penalized."""
+        energy = create_scope_energy(use_latent_modulation=False)
+
+        plan = ExecutionPlan(
+            nodes=[
+                ToolCallNode(
+                    tool_name="traverse_directory",
+                    node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
+                    scope_volume=50,
+                    scope_sensitivity=1,
+                    arguments={"depth": 10}
+                )
+            ],
+            edges=[]
+        )
+
         minimal_scope = ScopeConstraints(
             limit=50,
             max_depth=2,  # Only need shallow traversal
@@ -265,11 +283,6 @@ class TestScopeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="get_user_data",
-                    node_id="node1",
-                    arguments={"include_ssn": True, "include_financial": True},
-                    scope_volume=1,
-                    scope_sensitivity=5  # Max sensitivity
                     tool_name="get_user_profile",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
@@ -303,23 +316,31 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="search_records",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 100, "days": 90, "depth": 3},
                     scope_volume=100,
                     scope_sensitivity=1
                 )
             ],
             edges=[]
-        minimal_scope = ScopeConstraints(
-            limit=1,
-            max_depth=1,
-            include_sensitive=False  # Sensitivity = 0
         )
 
-        E = energy(plan, minimal_scope=minimal_scope)
+        minimal_scope = ScopeConstraints(
+            limit=10,
+            date_range_days=7,
+            max_depth=1,
+            include_sensitive=False
+        )
 
-        # Sensitivity dimension has weight 2.0 (highest), so should dominate
-        # With sensitivity=5/5=1.0 and include_sensitive=False (0), penalty = 2.0 * (1.0)^2 = 2.0
-        assert float(E) >= 2.0, "Unauthorized sensitive access should spike energy"
+        E = energy(plan, minimal_scope)
+
+        # Expected contributions:
+        # limit: 1.0 * (100-10)^2 = 1.0 * 8100 = 8100
+        # date_range: 0.5 * (90-7)^2 = 0.5 * 6889 = 3444.5
+        # depth: 0.3 * (3-1)^2 = 0.3 * 4 = 1.2
+        # Total ≈ 11545.7
+        assert float(E) > 11000, "Multi-dimension over-scope should accumulate penalties"
+        assert float(E) < 12000, "Energy should match expected calculation"
 
     def test_multi_node_aggregation(self):
         """Energy should aggregate across multiple nodes."""
@@ -350,24 +371,11 @@ class TestScopeEnergy:
 
         minimal_scope = ScopeConstraints(
             limit=10,
-            date_range_days=7,
             date_range_days=1,
             max_depth=1,
             include_sensitive=False
         )
 
-        E = energy(plan, minimal_scope)
-
-        # Expected contributions:
-        # limit: 1.0 * (100-10)^2 = 1.0 * 8100 = 8100
-        # date_range: 0.5 * (90-7)^2 = 0.5 * 6889 = 3444.5
-        # depth: 0.3 * (3-1)^2 = 0.3 * 4 = 1.2
-        # Total ≈ 11545.7
-        assert float(E) > 11000, "Multi-dimension over-scope should accumulate penalties"
-        assert float(E) < 12000, "Energy should match expected calculation"
-
-    def test_explain_method(self):
-        """Explanation should provide interpretable breakdown."""
         E = energy(plan, minimal_scope=minimal_scope)
 
         # Should use max scope (500) across nodes
@@ -380,11 +388,6 @@ class TestScopeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="list_users",
-                    node_id="node1",
-                    arguments={"limit": 100},
-                    scope_volume=100,
-                    scope_sensitivity=1
                     tool_name="get_item",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
@@ -397,25 +400,12 @@ class TestScopeEnergy:
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
             limit=5,
             date_range_days=7,
             max_depth=1,
             include_sensitive=False
         )
 
-        explanation = energy.explain(plan, minimal_scope)
-
-        assert 'total_energy' in explanation
-        assert 'actual_scope' in explanation
-        assert 'minimal_scope' in explanation
-        assert 'over_scope' in explanation
-        assert 'dimension_energies' in explanation
-        assert 'recommendations' in explanation
-
-        # Check recommendations are generated
-        assert len(explanation['recommendations']) > 0
-        assert any("limit" in rec.lower() for rec in explanation['recommendations'])
         E = energy(plan, minimal_scope=minimal_scope)
 
         # Should have near-zero energy (may have tiny numerical errors)
@@ -462,11 +452,6 @@ class TestScopeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="fetch_data",
-                    node_id="node1",
-                    arguments={"limit": 50},
-                    scope_volume=50,
-                    scope_sensitivity=1
                     tool_name="list_users",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
@@ -478,17 +463,6 @@ class TestScopeEnergy:
             edges=[]
         )
 
-        z_g = torch.randn(1, 1024, requires_grad=True)
-        z_e = torch.randn(1, 1024, requires_grad=True)
-
-        minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
-        )
-
-        E = energy(plan, minimal_scope, z_g, z_e)
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
 
         z_g = torch.randn(1, 1024, requires_grad=True)
@@ -501,10 +475,6 @@ class TestScopeEnergy:
 
         assert z_g.grad is not None, "Should backprop through z_g"
         assert z_e.grad is not None, "Should backprop through z_e"
-
-    def test_latent_modulation(self):
-        """Latent modulation should affect energy magnitude."""
-        energy = create_scope_energy(use_latent_modulation=True)
         assert energy.dimension_weights.grad is not None, "Should compute gradients for weights"
 
     def test_explain_method(self):
@@ -532,27 +502,6 @@ class TestScopeEnergy:
             include_sensitive=False
         )
 
-        z_g = torch.randn(1, 1024)
-        z_e = torch.randn(1, 1024)
-
-        E_with_latent = energy(plan, minimal_scope, z_g, z_e)
-        E_without_latent = energy(plan, minimal_scope, None, None)
-
-        # Energies should differ when latent modulation is used
-        assert E_with_latent.shape == E_without_latent.shape == (1,)
-
-    def test_no_penalty_for_under_scope(self):
-        """Using less scope than needed should not be penalized."""
-        energy = create_scope_energy(use_latent_modulation=False)
-
-        plan = ExecutionPlan(
-            nodes=[
-                ToolCallNode(
-                    tool_name="get_items",
-                    node_id="node1",
-                    arguments={"limit": 5},
-                    scope_volume=5,
-                    scope_sensitivity=1
         explanation = energy.explain(plan, minimal_scope=minimal_scope)
 
         assert 'total_energy' in explanation
@@ -603,19 +552,6 @@ class TestScopeEnergy:
             edges=[]
         )
 
-        # Minimal scope allows up to 100
-        minimal_scope = ScopeConstraints(
-            limit=100,
-            date_range_days=365,
-            max_depth=10,
-            include_sensitive=True
-        )
-
-        E = energy(plan, minimal_scope)
-        assert float(E) == 0.0, "Under-scoping should have zero energy"
-
-    def test_single_node_plan(self):
-        """Single node plan should work correctly."""
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
 
         z_g = torch.randn(1, 1024)
@@ -637,9 +573,6 @@ class TestScopeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="noop",
-                    node_id="node1",
-                    scope_sensitivity=1
                     tool_name="test_tool",
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
@@ -673,25 +606,6 @@ class TestScopePerformance:
             ToolCallNode(
                 tool_name=f"tool_{i}",
                 node_id=f"node{i}",
-                arguments={"limit": i * 10, "days": i * 5},
-                scope_volume=i * 10,
-                scope_sensitivity=(i % 5) + 1  # Valid range: 1-5
-            )
-            for i in range(1, 21)
-        ]
-
-        plan = ExecutionPlan(nodes=nodes, edges=[])
-
-        minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
-        )
-
-        # Warm-up
-        for _ in range(5):
-            _ = energy(plan, minimal_scope)
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=max(1, i * 10),  # Ensure >= 1
                 scope_sensitivity=i % 5 + 1,
