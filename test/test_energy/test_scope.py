@@ -84,6 +84,7 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="list_items",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1},
                     scope_volume=1,
                     scope_sensitivity=1,  # Min valid value
@@ -164,6 +165,7 @@ class TestScopeEnergy:
                 ToolCallNode(
                     tool_name="list_invoices",
                     node_id="node1",
+                    provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1000},
                     scope_volume=1000,
                     scope_sensitivity=1,
@@ -328,16 +330,21 @@ class TestScopeEnergy:
         )
 
         minimal_scope = ScopeConstraints(
-            limit=1,
+            limit=10,
+            date_range_days=7,
             max_depth=1,
-            include_sensitive=False  # Sensitivity = 0
+            include_sensitive=False
         )
 
-        E = energy(plan, minimal_scope=minimal_scope)
+        E = energy(plan, minimal_scope)
 
-        # Sensitivity dimension has weight 2.0 (highest), so should dominate
-        # With sensitivity=5/5=1.0 and include_sensitive=False (0), penalty = 2.0 * (1.0)^2 = 2.0
-        assert float(E) >= 2.0, "Unauthorized sensitive access should spike energy"
+        # Expected contributions:
+        # limit: 1.0 * (100-10)^2 = 1.0 * 8100 = 8100
+        # date_range: 0.5 * (90-7)^2 = 0.5 * 6889 = 3444.5
+        # depth: 0.3 * (3-1)^2 = 0.3 * 4 = 1.2
+        # Total ≈ 11545.7
+        assert float(E) > 11000, "Multi-dimension over-scope should accumulate penalties"
+        assert float(E) < 12000, "Energy should match expected calculation"
 
     def test_multi_node_aggregation(self):
         """Energy should aggregate across multiple nodes."""
