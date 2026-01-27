@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769511869598,
+  "lastUpdate": 1769513929696,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -186,6 +186,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.001946589969186103",
             "extra": "mean: 257.76128900000685 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "guy.na8@gmail.com",
+            "name": "mayor",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "guy.na8@gmail.com",
+            "name": "Clem 🤗",
+            "username": "GuyNachshon"
+          },
+          "distinct": true,
+          "id": "3c78a23b1968ff16af1f0eafe95cd44fdfd2a591",
+          "message": "fix: Add converter from ToolCallGraph to ExecutionPlan for Lakera loader\n\n- Add toolcallgraph_to_execution_plan() converter function\n- Fix attribute mappings: tool_id→tool_name, source_type→provenance_tier\n- Map TrustTier enums to integer values (1-3) for ToolCallNode\n- Map SensitivityTier enums to integers (1-4)\n- Handle ScopeMetadata with rows_requested field\n\nFixes type mismatch errors that prevented dataset generation.\nValidated with 100-sample test generation (146KB output).",
+          "timestamp": "2026-01-27T13:26:06+02:00",
+          "tree_id": "e4ecaba77becb42a2aade56ded7a2e11c77a0fb8",
+          "url": "https://github.com/ozlabsai/gatling/commit/3c78a23b1968ff16af1f0eafe95cd44fdfd2a591"
+        },
+        "date": 1769513929360,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.9934532094826856,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00044498853997604267",
+            "extra": "mean: 250.40984519999938 msec\nrounds: 5"
           }
         ]
       }
