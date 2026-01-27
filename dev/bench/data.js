@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769384848651,
+  "lastUpdate": 1769511869598,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -155,6 +155,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0005467674774886391",
             "extra": "mean: 253.99166780000542 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "guy.na8@gmail.com",
+            "name": "mayor",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "guy.na8@gmail.com",
+            "name": "Clem 🤗",
+            "username": "GuyNachshon"
+          },
+          "distinct": true,
+          "id": "2137abb6dc67869dd1e4f904b118470f0dc4bb8d",
+          "message": "fix: Remove duplicate provenance_tier arguments in test_scope.py\n\nFixes syntax errors from merge conflicts",
+          "timestamp": "2026-01-27T13:03:18+02:00",
+          "tree_id": "899d0be07a7c1f7141a573446a8a94c83515b783",
+          "url": "https://github.com/ozlabsai/gatling/commit/2137abb6dc67869dd1e4f904b118470f0dc4bb8d"
+        },
+        "date": 1769511869279,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.879558501121452,
+            "unit": "iter/sec",
+            "range": "stddev: 0.001946589969186103",
+            "extra": "mean: 257.76128900000685 msec\nrounds: 5"
           }
         ]
       }
