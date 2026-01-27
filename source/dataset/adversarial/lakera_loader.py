@@ -25,10 +25,66 @@ from dotenv import load_dotenv
 
 from source.dataset.adversarial.context_synthesizer import ContextSynthesizer
 from source.dataset.loaders import DatasetLoader, DatasetSample
-from source.dataset.models import TrustTier
+from source.dataset.models import TrustTier, ToolCallGraph
+from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode
 
 # Load environment variables
 load_dotenv()
+
+
+def toolcallgraph_to_execution_plan(graph: ToolCallGraph) -> ExecutionPlan:
+    """
+    Convert ToolCallGraph (dataset format) to ExecutionPlan (encoder format).
+
+    Args:
+        graph: ToolCallGraph with calls and dependencies
+
+    Returns:
+        ExecutionPlan with nodes and edges
+    """
+    # Convert ToolCall objects to ToolCallNode objects
+    nodes = []
+    for call in graph.calls:
+        # Extract scope_volume from scope metadata
+        scope_volume = call.scope.rows_requested if (call.scope and call.scope.rows_requested) else 1
+
+        # Map SensitivityTier enum to integer (1-4)
+        sensitivity_map = {
+            "public": 1,
+            "internal": 2,
+            "confidential": 3,
+            "restricted": 4,
+        }
+        scope_sensitivity = sensitivity_map.get(call.scope.sensitivity_tier.value, 2) if call.scope else 2
+
+        # Map TrustTier enum to integer (1-3)
+        # ToolCallNode expects: 1=INTERNAL, 2=VERIFIED_RAG, 3=UNVERIFIED_RAG/USER
+        trust_tier_map = {
+            TrustTier.SYSTEM: 1,
+            TrustTier.USER: 3,  # Treat user as tier 3 (untrusted)
+            TrustTier.VERIFIED_RAG: 2,
+            TrustTier.UNVERIFIED_RAG: 3,
+        }
+        provenance_tier_int = trust_tier_map.get(call.provenance.source_type, 3)
+
+        node = ToolCallNode(
+            tool_name=call.tool_id,  # tool_id in ToolCall, tool_name in ToolCallNode
+            node_id=call.call_id,
+            provenance_tier=provenance_tier_int,  # Convert enum to integer
+            arguments=call.arguments,
+            scope_volume=scope_volume,
+            scope_sensitivity=scope_sensitivity,
+        )
+        nodes.append(node)
+
+    # Build edges from dependencies
+    edges = []
+    for call in graph.calls:
+        for dep_id in call.dependencies:
+            # Edge from dependency to this call (dep -> call)
+            edges.append((dep_id, call.call_id))
+
+    return ExecutionPlan(nodes=nodes, edges=edges)
 
 
 class LakeraAdversarialLoader(DatasetLoader):
@@ -240,9 +296,9 @@ class LakeraAdversarialLoader(DatasetLoader):
 
                         self._stats["by_dataset"][source_name] = self._stats["by_dataset"].get(source_name, 0) + 1
 
-                        # Create DatasetSample
+                        # Create DatasetSample (convert ToolCallGraph to ExecutionPlan)
                         dataset_sample = DatasetSample(
-                            execution_plan=gold_trace.graph,  # ToolCallGraph
+                            execution_plan=toolcallgraph_to_execution_plan(gold_trace.graph),
                             label="adversarial",  # All Lakera samples are adversarial
                             original_id=gold_trace.trace_id,
                             category=attack_pattern,
