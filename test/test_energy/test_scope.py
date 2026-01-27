@@ -87,8 +87,7 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1},
                     scope_volume=1,
-                    scope_sensitivity=1,  # Min valid value
-                    provenance_tier=TrustTier.INTERNAL
+                    scope_sensitivity=1  # Min valid value
                 )
             ],
             edges=[]
@@ -168,8 +167,7 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1000},
                     scope_volume=1000,
-                    scope_sensitivity=1,
-                    provenance_tier=TrustTier.INTERNAL
+                    scope_sensitivity=1
                 )
             ],
             edges=[]
