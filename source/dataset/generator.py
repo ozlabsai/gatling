@@ -10,7 +10,12 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from source.dataset.models import GoldTrace
+
+# Load environment variables
+load_dotenv()
 from source.dataset.oracle.agent import OracleAgent
 from source.dataset.schemas.registry import DomainRegistry
 from source.dataset.validators.trace_validator import TraceValidator
@@ -144,7 +149,7 @@ class GoldTraceGenerator:
 
         with open(checkpoint_path, "w") as f:
             for trace in traces[checkpoint_num:]:
-                f.write(json.dumps(trace.to_training_format()) + "\n")
+                f.write(json.dumps(trace.to_training_format(), default=str) + "\n")
 
     def _save_final_dataset(self, traces: list[GoldTrace]) -> None:
         """Save the final complete dataset."""
@@ -155,7 +160,7 @@ class GoldTraceGenerator:
 
         with open(final_path, "w") as f:
             for trace in traces:
-                f.write(json.dumps(trace.to_training_format()) + "\n")
+                f.write(json.dumps(trace.to_training_format(), default=str) + "\n")
 
         # Also save metadata
         metadata_path = self.output_dir / f"metadata_{timestamp}.json"

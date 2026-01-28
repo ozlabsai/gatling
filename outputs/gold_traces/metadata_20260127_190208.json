@@ -1,0 +1,50 @@
+{
+  "total_traces": 51,
+  "generation_stats": {
+    "total_attempted": 0,
+    "total_generated": 51,
+    "total_validated": 51,
+    "failed_validation": 1,
+    "by_domain": {
+      "Finance": 0,
+      "HR": 1,
+      "Sales": 18,
+      "Marketing": 18,
+      "Legal": 14
+    },
+    "start_time": "2026-01-27 18:34:07.607764"
+  },
+  "diversity_metrics": {
+    "total_traces": 51,
+    "unique_domains": 4,
+    "domain_distribution": {
+      "HR": 1,
+      "Sales": 18,
+      "Marketing": 18,
+      "Legal": 14
+    },
+    "unique_intents": 3,
+    "intent_distribution": {
+      "retrieve": 45,
+      "analyze": 5,
+      "export": 1
+    },
+    "unique_tools": 4,
+    "tool_distribution": {
+      "sales.list_opportunities": 18,
+      "marketing.list_items": 18,
+      "legal.list_items": 14,
+      "hr.list_employees": 1
+    },
+    "scope_stats": {
+      "min": 1,
+      "max": 100,
+      "avg": 28.627450980392158
+    },
+    "graph_complexity": {
+      "min_calls": 1,
+      "max_calls": 1,
+      "avg_calls": 1.0
+    }
+  }
+}
