@@ -1,0 +1,20 @@
+{
+  "timestamp": "20260128_123408",
+  "target_samples": 10000,
+  "actual_samples": 20803,
+  "statistics": {
+    "total_samples": 20803,
+    "adversarial": 248,
+    "benign": 20555,
+    "adversarial_ratio": 0.011921357496514925,
+    "by_source": {
+      "prompt-injections": 546,
+      "prompt-injection-dataset": 257,
+      "wildchat": 10000,
+      "lmsys-chat": 10000
+    }
+  },
+  "output_file": "data/adversarial_sample_10k.jsonl",
+  "cost": "$0 (using HuggingFace datasets)",
+  "strategy": "Real-world adversarial + benign samples from HF"
+}
