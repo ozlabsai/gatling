@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769595929864,
+  "lastUpdate": 1769597198640,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -248,6 +248,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0003676798321778593",
             "extra": "mean: 255.95051459999922 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "guy.na8@gmail.com",
+            "name": "mayor",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "guy.na8@gmail.com",
+            "name": "Clem 🤗",
+            "username": "GuyNachshon"
+          },
+          "distinct": true,
+          "id": "2397c006cef5c30248a6f41d27ea58f01e98cedd",
+          "message": "feat: Phase 2B (DG-001) - Adversarial dataset infrastructure with 9 HF datasets\n\nImplements full adversarial dataset loading infrastructure using real HuggingFace\ndatasets instead of expensive synthetic generation ($0 vs $40-60K).\n\n**Infrastructure**:\n- Added 5 new datasets to loaders.py (AgentHarm, tool-use datasets, WildChat, LMSYS)\n- Created generate_adversarial_dataset.py script for batch generation\n- Fixed conversation array handling for WildChat/LMSYS datasets\n- Fixed config/split parsing for AgentHarm and llmail-inject datasets\n\n**Datasets Integrated** (9 total):\n1. deepset/prompt-injections (546)\n2. microsoft/llmail-inject-challenge (1,000)\n3. daqc/info-security-policies-rag-distiset (100)\n4. geekyrakshit/prompt-injection-dataset (257)\n5. ai-safety-institute/AgentHarm (176)\n6. llamafactory/reason-tool-use-demo-1500 (1,500)\n7. allenai/Dolci-Instruct-SFT-Tool-Use (937)\n8. allenai/WildChat-1M (10,000 sampled)\n9. lmsys/lmsys-chat-1m (10,000 sampled)\n\n**Testing**:\n- Generated 21,978 samples locally (960 adversarial, 21,018 benign)\n- Metadata saved as data/metadata_20260128_123408.json\n- Data files excluded from repo (contain user conversations)\n\n**Scalability**:\n- Current: 22K samples from 9 datasets\n- Target: 563K (increase max_samples for WildChat/LMSYS to 100K+ each)\n- Infrastructure ready for scaling with --target flag\n\n**Cost**: $0 (vs $40-60K for synthetic generation)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-01-28T12:45:24+02:00",
+          "tree_id": "b2b3fee0b7c75f8f0af74425118f3f1ea2faf2f6",
+          "url": "https://github.com/ozlabsai/gatling/commit/2397c006cef5c30248a6f41d27ea58f01e98cedd"
+        },
+        "date": 1769597197788,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.809911398704491,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0011728608270626354",
+            "extra": "mean: 262.47329540000237 msec\nrounds: 5"
           }
         ]
       }
