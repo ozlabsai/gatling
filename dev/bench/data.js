@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769513929696,
+  "lastUpdate": 1769595929864,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -217,6 +217,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00044498853997604267",
             "extra": "mean: 250.40984519999938 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "58976716+GuyNachshon@users.noreply.github.com",
+            "name": "Guy Nachshon",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "504e41dcc13e3f9f20ae0c95824a77970d007244",
+          "message": "Dataset Validation: Lakera Adversarial & Gold Traces with Bug Fixes\n\nCompletes Phase 2A validation:\n- Generated 1K Lakera adversarial samples (100% synthesis rate)\n- Generated 51 gold traces with strict validation (LLM-as-Oracle)\n- Fixed datetime serialization bug in generator.py\n- Fixed environment variable loading for API key\n- Added dataset validation report\n\nAll CI checks passed. Ready for Phase 2B full dataset generation.",
+          "timestamp": "2026-01-28T12:24:26+02:00",
+          "tree_id": "cc017a3616c0f24ef231011b300175ff41589d4d",
+          "url": "https://github.com/ozlabsai/gatling/commit/504e41dcc13e3f9f20ae0c95824a77970d007244"
+        },
+        "date": 1769595928916,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.907005233268646,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003676798321778593",
+            "extra": "mean: 255.95051459999922 msec\nrounds: 5"
           }
         ]
       }
