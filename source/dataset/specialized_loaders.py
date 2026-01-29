@@ -1026,37 +1026,48 @@ class TurkishFunctionCallingLoader(DatasetLoader):
         """Parse function calls from Turkish dataset."""
         nodes = []
 
-        # Turkish dataset format: similar to standard function calling
-        functions = sample.get("functions", sample.get("tools", []))
-        conversation = sample.get("conversation", sample.get("messages", []))
+        # Turkish dataset schema: {'tools': 'JSON string', 'query': '...', 'answers': 'JSON string'}
+        # Function calls are in the 'answers' field (JSON-encoded string)
+        answers_str = sample.get("answers", "[]")
 
-        # Extract from conversation
-        for idx, turn in enumerate(conversation):
-            if isinstance(turn, dict):
-                if "function_call" in turn or "tool_call" in turn:
-                    func_call = turn.get("function_call", turn.get("tool_call", {}))
-                    tool_name = func_call.get("name", "unknown")
-                    arguments = func_call.get("arguments", {})
+        # Parse JSON string to list
+        if isinstance(answers_str, str):
+            try:
+                answers = json.loads(answers_str)
+            except json.JSONDecodeError:
+                return nodes
+        else:
+            answers = answers_str
 
-                    # Parse JSON arguments if needed
-                    if isinstance(arguments, str):
-                        try:
-                            arguments = json.loads(arguments)
-                        except json.JSONDecodeError:
-                            arguments = {"raw": arguments}
+        for idx, answer in enumerate(answers):
+            if not isinstance(answer, dict):
+                continue
 
-                    node = ToolCallNode(
-                        tool_name=tool_name,
-                        arguments=arguments,
-                        provenance_tier=TrustTier.INTERNAL,
-                        provenance_hash=hashlib.sha256(f"{sample_id}_{idx}".encode()).hexdigest()[
-                            :16
-                        ],
-                        scope_volume=1,
-                        scope_sensitivity=2,
-                        node_id=f"{sample_id}_turkish_{idx}",
-                    )
-                    nodes.append(node)
+            # Answer structure: {'type': 'function', 'function': {'name': '...', 'arguments': '...'}}
+            if answer.get("type") == "function":
+                function = answer.get("function", {})
+                tool_name = function.get("name", "unknown")
+                arguments = function.get("arguments", {})
+
+                # Parse JSON arguments if needed
+                if isinstance(arguments, str):
+                    try:
+                        arguments = json.loads(arguments)
+                    except json.JSONDecodeError:
+                        arguments = {"raw": arguments}
+
+                node = ToolCallNode(
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    provenance_tier=TrustTier.INTERNAL,
+                    provenance_hash=hashlib.sha256(f"{sample_id}_{idx}".encode()).hexdigest()[
+                        :16
+                    ],
+                    scope_volume=1,
+                    scope_sensitivity=2,
+                    node_id=f"{sample_id}_turkish_{idx}",
+                )
+                nodes.append(node)
 
         return nodes
 
