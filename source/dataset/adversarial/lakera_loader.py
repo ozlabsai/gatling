@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 
 from source.dataset.adversarial.context_synthesizer import ContextSynthesizer
 from source.dataset.loaders import DatasetLoader, DatasetSample
-from source.dataset.models import TrustTier, ToolCallGraph
+from source.dataset.models import ToolCallGraph, TrustTier
 from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode
 
 # Load environment variables
@@ -46,7 +46,9 @@ def toolcallgraph_to_execution_plan(graph: ToolCallGraph) -> ExecutionPlan:
     nodes = []
     for call in graph.calls:
         # Extract scope_volume from scope metadata
-        scope_volume = call.scope.rows_requested if (call.scope and call.scope.rows_requested) else 1
+        scope_volume = (
+            call.scope.rows_requested if (call.scope and call.scope.rows_requested) else 1
+        )
 
         # Map SensitivityTier enum to integer (1-4)
         sensitivity_map = {
@@ -55,7 +57,9 @@ def toolcallgraph_to_execution_plan(graph: ToolCallGraph) -> ExecutionPlan:
             "confidential": 3,
             "restricted": 4,
         }
-        scope_sensitivity = sensitivity_map.get(call.scope.sensitivity_tier.value, 2) if call.scope else 2
+        scope_sensitivity = (
+            sensitivity_map.get(call.scope.sensitivity_tier.value, 2) if call.scope else 2
+        )
 
         # Map TrustTier enum to integer (1-3)
         # ToolCallNode expects: 1=INTERNAL, 2=VERIFIED_RAG, 3=UNVERIFIED_RAG/USER
@@ -100,7 +104,7 @@ class LakeraAdversarialLoader(DatasetLoader):
     Example:
         >>> loader = LakeraAdversarialLoader(
         ...     synthesis_mode="automatic",
-        ...     provenance_distribution={"user": 0.5, "unverified_rag": 0.4, "verified_rag": 0.1}
+        ...     provenance_distribution={"user": 0.5, "unverified_rag": 0.4, "verified_rag": 0.1},
         ... )
         >>> for sample in loader.load():
         ...     print(sample.label)  # "adversarial"
@@ -148,7 +152,9 @@ class LakeraAdversarialLoader(DatasetLoader):
             augmentation_factor: How many times to repeat dataset with different provenance tiers
             domain: Domain context for synthesized policies
         """
-        self.cache_dir = cache_dir or os.path.join(os.path.expanduser("~"), ".cache", "gatling", "datasets")
+        self.cache_dir = cache_dir or os.path.join(
+            os.path.expanduser("~"), ".cache", "gatling", "datasets"
+        )
         self.synthesis_mode = synthesis_mode
         self.target_samples = target_samples
         self.augmentation_factor = augmentation_factor
@@ -205,7 +211,9 @@ class LakeraAdversarialLoader(DatasetLoader):
 
         return random.choices(tiers, weights=weights)[0]
 
-    def _load_single_dataset(self, dataset_config: dict[str, Any]) -> Iterator[tuple[str, float | None, str]]:
+    def _load_single_dataset(
+        self, dataset_config: dict[str, Any]
+    ) -> Iterator[tuple[str, float | None, str]]:
         """
         Load a single Lakera dataset from Hugging Face.
 
@@ -226,7 +234,10 @@ class LakeraAdversarialLoader(DatasetLoader):
             for split in dataset_config["splits"]:
                 try:
                     ds = load_dataset(
-                        dataset_name, dataset_config.get("config"), split=split, cache_dir=self.cache_dir
+                        dataset_name,
+                        dataset_config.get("config"),
+                        split=split,
+                        cache_dir=self.cache_dir,
                     )
 
                     for sample in ds:
@@ -255,15 +266,17 @@ class LakeraAdversarialLoader(DatasetLoader):
 
         # Augmentation loop (repeat dataset with different provenance tiers)
         for aug_iteration in range(self.augmentation_factor):
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"Augmentation Iteration {aug_iteration + 1}/{self.augmentation_factor}")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
             # Load from each dataset
             for dataset_config in self.DATASETS:
                 dataset_name = dataset_config["name"]
 
-                for adversarial_prompt, similarity_score, source_name in self._load_single_dataset(dataset_config):
+                for adversarial_prompt, similarity_score, source_name in self._load_single_dataset(
+                    dataset_config
+                ):
                     # Check if we've reached target
                     if self.target_samples and samples_generated >= self.target_samples:
                         print(f"\n✓ Reached target of {self.target_samples} samples")
@@ -294,7 +307,9 @@ class LakeraAdversarialLoader(DatasetLoader):
                             self._stats["by_provenance_tier"].get(provenance_tier.value, 0) + 1
                         )
 
-                        self._stats["by_dataset"][source_name] = self._stats["by_dataset"].get(source_name, 0) + 1
+                        self._stats["by_dataset"][source_name] = (
+                            self._stats["by_dataset"].get(source_name, 0) + 1
+                        )
 
                         # Create DatasetSample (convert ToolCallGraph to ExecutionPlan)
                         dataset_sample = DatasetSample(
@@ -305,7 +320,9 @@ class LakeraAdversarialLoader(DatasetLoader):
                             metadata={
                                 "source_dataset": source_name,
                                 "attack_pattern": attack_pattern,
-                                "classification_confidence": gold_trace.metadata["classification_confidence"],
+                                "classification_confidence": gold_trace.metadata[
+                                    "classification_confidence"
+                                ],
                                 "energy_labels": gold_trace.metadata["energy_labels"],
                                 "provenance_tier": provenance_tier.value,
                                 "similarity_score": similarity_score,

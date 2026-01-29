@@ -4,25 +4,27 @@ Tests for conversation sampling module.
 Tests the full pipeline from sampling to mutation.
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from source.dataset.conversations.sampler import (
-    Conversation,
-    ConversationTurn,
-    ConversationSampler,
-)
+
 from source.dataset.conversations.intent_extractor import (
     ActionIntent,
     IntentExtractor,
+)
+from source.dataset.conversations.mutator import (
+    AdversarialMutator,
+    MutatedPlan,
+    MutationType,
 )
 from source.dataset.conversations.plan_transformer import (
     ExecutionPlan,
     PlanTransformer,
 )
-from source.dataset.conversations.mutator import (
-    AdversarialMutator,
-    MutationType,
-    MutatedPlan,
+from source.dataset.conversations.sampler import (
+    Conversation,
+    ConversationSampler,
+    ConversationTurn,
 )
 
 
@@ -244,11 +246,11 @@ class TestPlanTransformer:
     def test_execution_plan_model(self):
         """Test ExecutionPlan model."""
         from source.dataset.models import (
-            UserRequest,
-            SystemPolicy,
-            ToolCallGraph,
             ScopeMetadata,
             SensitivityTier,
+            SystemPolicy,
+            ToolCallGraph,
+            UserRequest,
         )
 
         intent = ActionIntent(
@@ -269,7 +271,8 @@ class TestPlanTransformer:
             ),
         )
 
-        policy = SystemPolicy(description="Test policy",
+        policy = SystemPolicy(
+            description="Test policy",
             policy_id="policy_1",
             domain="Finance",
             rules=["Rule 1"],
@@ -308,14 +311,14 @@ class TestAdversarialMutator:
     def test_scope_blowup_mutation(self):
         """Test scope blow-up mutation."""
         from source.dataset.models import (
-            UserRequest,
-            SystemPolicy,
-            ToolCallGraph,
-            ToolCall,
-            ScopeMetadata,
             ProvenancePointer,
+            ScopeMetadata,
             SensitivityTier,
+            SystemPolicy,
+            ToolCall,
+            ToolCallGraph,
             TrustTier,
+            UserRequest,
         )
 
         # Create a simple execution plan
@@ -360,7 +363,8 @@ class TestAdversarialMutator:
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
             ),
-            inferred_policy=SystemPolicy(description="Test policy",
+            inferred_policy=SystemPolicy(
+                description="Test policy",
                 policy_id="policy_1",
                 domain="Finance",
                 rules=[],
@@ -375,22 +379,19 @@ class TestAdversarialMutator:
 
         assert mutated is not None
         assert mutated.mutation_type == MutationType.SCOPE_BLOWUP
-        assert (
-            mutated.execution_plan.graph.calls[0].scope.rows_requested
-            > 5
-        )
+        assert mutated.execution_plan.graph.calls[0].scope.rows_requested > 5
 
     def test_privilege_escalation_mutation(self):
         """Test privilege escalation mutation."""
         from source.dataset.models import (
-            UserRequest,
-            SystemPolicy,
-            ToolCallGraph,
-            ToolCall,
-            ScopeMetadata,
             ProvenancePointer,
+            ScopeMetadata,
             SensitivityTier,
+            SystemPolicy,
+            ToolCall,
+            ToolCallGraph,
             TrustTier,
+            UserRequest,
         )
 
         intent = ActionIntent(
@@ -434,7 +435,8 @@ class TestAdversarialMutator:
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
             ),
-            inferred_policy=SystemPolicy(description="Test policy",
+            inferred_policy=SystemPolicy(
+                description="Test policy",
                 policy_id="policy_1",
                 domain="Finance",
                 rules=[],
@@ -457,14 +459,14 @@ class TestAdversarialMutator:
     def test_mutate_plans_rate(self):
         """Test that mutation rate is respected."""
         from source.dataset.models import (
-            UserRequest,
-            SystemPolicy,
-            ToolCallGraph,
-            ToolCall,
-            ScopeMetadata,
             ProvenancePointer,
+            ScopeMetadata,
             SensitivityTier,
+            SystemPolicy,
+            ToolCall,
+            ToolCallGraph,
             TrustTier,
+            UserRequest,
         )
 
         # Create 10 simple plans
@@ -511,7 +513,8 @@ class TestAdversarialMutator:
                         sensitivity_tier=SensitivityTier.INTERNAL,
                     ),
                 ),
-                inferred_policy=SystemPolicy(description="Test policy",
+                inferred_policy=SystemPolicy(
+                    description="Test policy",
                     policy_id="policy_1",
                     domain="Finance",
                     rules=[],
@@ -533,11 +536,11 @@ class TestAdversarialMutator:
     def test_mutated_plan_model(self):
         """Test MutatedPlan model."""
         from source.dataset.models import (
-            UserRequest,
-            SystemPolicy,
-            ToolCallGraph,
             ScopeMetadata,
             SensitivityTier,
+            SystemPolicy,
+            ToolCallGraph,
+            UserRequest,
         )
 
         intent = ActionIntent(
@@ -561,7 +564,8 @@ class TestAdversarialMutator:
                     sensitivity_tier=SensitivityTier.INTERNAL,
                 ),
             ),
-            inferred_policy=SystemPolicy(description="Test policy",
+            inferred_policy=SystemPolicy(
+                description="Test policy",
                 policy_id="policy_1",
                 domain="Finance",
                 rules=[],

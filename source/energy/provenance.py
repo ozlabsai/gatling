@@ -29,11 +29,12 @@ Design Philosophy:
     An ADMIN operation from untrusted source = Catastrophic risk
 """
 
-import torch
-import torch.nn as nn
 from typing import Any
 
-from source.encoders.execution_encoder import ExecutionPlan, TrustTier, ToolCallNode
+import torch
+import torch.nn as nn
+
+from source.encoders.execution_encoder import ExecutionPlan
 
 
 class PrivilegeClassifier(nn.Module):
@@ -63,7 +64,7 @@ class PrivilegeClassifier(nn.Module):
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, 1),
-            nn.Sigmoid()  # [0, 1]
+            nn.Sigmoid(),  # [0, 1]
         )
 
     def forward(self, tool_token: torch.Tensor) -> torch.Tensor:
@@ -107,7 +108,7 @@ class ProvenanceEnergy(nn.Module):
         hidden_dim: int = 256,
         vocab_size: int = 10000,
         use_latent_modulation: bool = True,
-        latent_dim: int = 1024
+        latent_dim: int = 1024,
     ):
         super().__init__()
 
@@ -118,17 +119,12 @@ class ProvenanceEnergy(nn.Module):
 
         # Learnable gap penalties per trust tier
         # Initialize: [0.0, 0.5, 2.0] for tiers [1, 2, 3]
-        self.gap_penalties = nn.Parameter(
-            torch.tensor([0.0, 0.5, 2.0], dtype=torch.float32)
-        )
+        self.gap_penalties = nn.Parameter(torch.tensor([0.0, 0.5, 2.0], dtype=torch.float32))
 
         # Optional latent-based modulation
         if use_latent_modulation:
             self.latent_modulation = nn.Sequential(
-                nn.Linear(latent_dim * 2, 256),
-                nn.ReLU(),
-                nn.Linear(256, 1),
-                nn.Softplus()
+                nn.Linear(latent_dim * 2, 256), nn.ReLU(), nn.Linear(256, 1), nn.Softplus()
             )
 
     def _hash_tool_name(self, tool_name: str) -> int:
@@ -139,7 +135,7 @@ class ProvenanceEnergy(nn.Module):
         self,
         plan: ExecutionPlan | dict[str, Any],
         z_g: torch.Tensor | None = None,
-        z_e: torch.Tensor | None = None
+        z_e: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Calculate E_provenance energy.
@@ -161,18 +157,21 @@ class ProvenanceEnergy(nn.Module):
             return torch.tensor([0.0], dtype=torch.float32)
 
         # Tokenize tool names
-        tool_tokens = torch.tensor([
-            self._hash_tool_name(node.tool_name) for node in nodes
-        ], dtype=torch.long)
+        tool_tokens = torch.tensor(
+            [self._hash_tool_name(node.tool_name) for node in nodes], dtype=torch.long
+        )
 
         # Classify privilege levels
         privilege_scores = self.privilege_classifier(tool_tokens).squeeze(-1)  # [N]
 
         # Extract trust tiers
-        trust_tiers = torch.tensor([
-            int(node.provenance_tier) - 1  # Convert to 0-indexed
-            for node in nodes
-        ], dtype=torch.long)
+        trust_tiers = torch.tensor(
+            [
+                int(node.provenance_tier) - 1  # Convert to 0-indexed
+                for node in nodes
+            ],
+            dtype=torch.long,
+        )
 
         # Lookup gap penalties
         gap_multipliers = self.gap_penalties[trust_tiers]  # [N]
@@ -191,10 +190,7 @@ class ProvenanceEnergy(nn.Module):
 
         return total_energy.unsqueeze(0)
 
-    def explain(
-        self,
-        plan: ExecutionPlan | dict[str, Any]
-    ) -> dict[str, Any]:
+    def explain(self, plan: ExecutionPlan | dict[str, Any]) -> dict[str, Any]:
         """
         Generate human-readable explanation of trust gap violations.
 
@@ -220,22 +216,18 @@ class ProvenanceEnergy(nn.Module):
         nodes = plan.nodes
 
         if len(nodes) == 0:
-            return {
-                'total_energy': 0.0,
-                'node_contributions': [],
-                'critical_violations': []
-            }
+            return {"total_energy": 0.0, "node_contributions": [], "critical_violations": []}
 
         # Compute scores
-        tool_tokens = torch.tensor([
-            self._hash_tool_name(node.tool_name) for node in nodes
-        ], dtype=torch.long)
+        tool_tokens = torch.tensor(
+            [self._hash_tool_name(node.tool_name) for node in nodes], dtype=torch.long
+        )
 
         privilege_scores = self.privilege_classifier(tool_tokens).squeeze(-1)
 
-        trust_tiers = torch.tensor([
-            int(node.provenance_tier) - 1 for node in nodes
-        ], dtype=torch.long)
+        trust_tiers = torch.tensor(
+            [int(node.provenance_tier) - 1 for node in nodes], dtype=torch.long
+        )
 
         gap_multipliers = self.gap_penalties[trust_tiers]
         node_energies = privilege_scores * gap_multipliers
@@ -248,12 +240,12 @@ class ProvenanceEnergy(nn.Module):
             energy = float(node_energies[i])
 
             node_info = {
-                'node_id': node.node_id,
-                'tool_name': node.tool_name,
-                'privilege_score': float(privilege_scores[i]),
-                'trust_tier': int(node.provenance_tier),
-                'gap_penalty': float(gap_multipliers[i]),
-                'energy_contribution': energy
+                "node_id": node.node_id,
+                "tool_name": node.tool_name,
+                "privilege_score": float(privilege_scores[i]),
+                "trust_tier": int(node.provenance_tier),
+                "gap_penalty": float(gap_multipliers[i]),
+                "energy_contribution": energy,
             }
 
             contributions.append(node_info)
@@ -262,16 +254,14 @@ class ProvenanceEnergy(nn.Module):
                 critical_violations.append(node.node_id)
 
         return {
-            'total_energy': float(node_energies.sum()),
-            'node_contributions': contributions,
-            'critical_violations': critical_violations
+            "total_energy": float(node_energies.sum()),
+            "node_contributions": contributions,
+            "critical_violations": critical_violations,
         }
 
 
 def create_provenance_energy(
-    use_latent_modulation: bool = True,
-    checkpoint_path: str | None = None,
-    device: str = "cpu"
+    use_latent_modulation: bool = True, checkpoint_path: str | None = None, device: str = "cpu"
 ) -> ProvenanceEnergy:
     """
     Factory function for E_provenance.
@@ -287,9 +277,7 @@ def create_provenance_energy(
     model = ProvenanceEnergy(use_latent_modulation=use_latent_modulation)
 
     if checkpoint_path is not None:
-        model.load_state_dict(
-            torch.load(checkpoint_path, map_location=device, weights_only=True)
-        )
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
 
     model = model.to(device)
     model.training = False

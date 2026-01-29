@@ -137,9 +137,7 @@ class ConversationSampler:
         # Sample from LMSYS
         if n_lmsys > 0:
             print(f"Sampling {n_lmsys} conversations from LMSYS...")
-            lmsys_samples = self._sample_from_dataset(
-                "lmsys", n_lmsys, min_turns, max_turns
-            )
+            lmsys_samples = self._sample_from_dataset("lmsys", n_lmsys, min_turns, max_turns)
             conversations.extend(lmsys_samples)
 
         # Shuffle to mix datasets
@@ -201,9 +199,7 @@ class ConversationSampler:
 
         return conversations
 
-    def _parse_wildchat_example(
-        self, example: dict[str, Any], idx: int
-    ) -> Conversation | None:
+    def _parse_wildchat_example(self, example: dict[str, Any], idx: int) -> Conversation | None:
         """
         Parse a WildChat conversation example.
 
@@ -241,9 +237,7 @@ class ConversationSampler:
             print(f"Warning: Failed to parse WildChat example {idx}: {e}")
             return None
 
-    def _parse_lmsys_example(
-        self, example: dict[str, Any], idx: int
-    ) -> Conversation | None:
+    def _parse_lmsys_example(self, example: dict[str, Any], idx: int) -> Conversation | None:
         """
         Parse an LMSYS conversation example.
 

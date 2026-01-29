@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 import torch
-import torch.nn.functional as F
 
 from scripts.train_jepa_encoders import (
     GoldTraceDataset,
@@ -18,8 +17,6 @@ from scripts.train_jepa_encoders import (
     TrainingConfig,
     collate_fn,
 )
-from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode
-from source.encoders.governance_encoder import PolicySchema
 
 
 class TestInfoNCELoss:
@@ -87,29 +84,31 @@ class TestGoldTraceDataset:
 
     def test_load_from_jsonl(self):
         """Dataset should load traces from JSONL file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             # Write sample gold trace
             trace = {
                 "governance_context": {
                     "policy": {"domain": "Test"},
                     "user_role": "tester",
-                    "session_context": {}
+                    "session_context": {},
                 },
                 "execution_plan": {
-                    "nodes": [{
-                        "tool_name": "test_tool",
-                        "node_id": "node1",
-                        "provenance_tier": 1,
-                        "scope_volume": 1,
-                        "scope_sensitivity": 1,
-                        "arguments": {}
-                    }],
-                    "edges": []
+                    "nodes": [
+                        {
+                            "tool_name": "test_tool",
+                            "node_id": "node1",
+                            "provenance_tier": 1,
+                            "scope_volume": 1,
+                            "scope_sensitivity": 1,
+                            "arguments": {},
+                        }
+                    ],
+                    "edges": [],
                 },
-                "label": "compliant"
+                "label": "compliant",
             }
             json.dump(trace, f)
-            f.write('\n')
+            f.write("\n")
             temp_path = f.name
 
         try:
@@ -142,13 +141,13 @@ class TestCollateFn:
             {
                 "governance_context": {"policy": {}, "user_role": "user1"},
                 "execution_plan": {"nodes": [], "edges": []},
-                "label": "compliant"
+                "label": "compliant",
             },
             {
                 "governance_context": {"policy": {}, "user_role": "user2"},
                 "execution_plan": {"nodes": [], "edges": []},
-                "label": "compliant"
-            }
+                "label": "compliant",
+            },
         ]
 
         batch = collate_fn(samples)
@@ -177,11 +176,7 @@ class TestTrainingConfig:
 
     def test_custom_config(self):
         """Config should accept custom parameters."""
-        config = TrainingConfig(
-            batch_size=64,
-            epochs=50,
-            learning_rate=5e-5
-        )
+        config = TrainingConfig(batch_size=64, epochs=50, learning_rate=5e-5)
 
         assert config.batch_size == 64
         assert config.epochs == 50
@@ -198,6 +193,7 @@ class TestIntegration:
 
         # Create dataloader
         from torch.utils.data import DataLoader
+
         loader = DataLoader(dataset, batch_size=2, collate_fn=collate_fn)
 
         # Get one batch

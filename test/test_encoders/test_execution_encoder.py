@@ -13,7 +13,6 @@ Test coverage includes:
 """
 
 import time
-from typing import Any
 
 import pytest
 import torch
@@ -27,7 +26,6 @@ from source.encoders.execution_encoder import (
     TrustTier,
     create_execution_encoder,
 )
-
 
 # ============================================================================
 # Fixtures: Sample Execution Plans
@@ -45,7 +43,7 @@ def simple_plan() -> ExecutionPlan:
                 arguments={"path": "/data/users.csv"},
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=100,
-                scope_sensitivity=2
+                scope_sensitivity=2,
             ),
             ToolCallNode(
                 node_id="n2",
@@ -53,7 +51,7 @@ def simple_plan() -> ExecutionPlan:
                 arguments={"column": "age", "operator": ">", "value": 18},
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=100,
-                scope_sensitivity=2
+                scope_sensitivity=2,
             ),
             ToolCallNode(
                 node_id="n3",
@@ -61,10 +59,10 @@ def simple_plan() -> ExecutionPlan:
                 arguments={"path": "/output/filtered.csv"},
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=50,
-                scope_sensitivity=2
+                scope_sensitivity=2,
             ),
         ],
-        edges=[("n1", "n2"), ("n2", "n3")]
+        edges=[("n1", "n2"), ("n2", "n3")],
     )
 
 
@@ -80,7 +78,7 @@ def complex_plan() -> ExecutionPlan:
                 arguments={"table": "users", "limit": 1000},
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=1000,
-                scope_sensitivity=3
+                scope_sensitivity=3,
             ),
             # RAG retrieval (untrusted)
             ToolCallNode(
@@ -89,7 +87,7 @@ def complex_plan() -> ExecutionPlan:
                 arguments={"query": "user demographics"},
                 provenance_tier=TrustTier.PUBLIC_WEB,
                 scope_volume=10,
-                scope_sensitivity=1
+                scope_sensitivity=1,
             ),
             # Join operation (mixed provenance)
             ToolCallNode(
@@ -98,7 +96,7 @@ def complex_plan() -> ExecutionPlan:
                 arguments={"key": "user_id"},
                 provenance_tier=TrustTier.PUBLIC_WEB,  # Inherits lowest trust
                 scope_volume=1000,
-                scope_sensitivity=3
+                scope_sensitivity=3,
             ),
             # Privileged operation
             ToolCallNode(
@@ -107,7 +105,7 @@ def complex_plan() -> ExecutionPlan:
                 arguments={"table": "users"},
                 provenance_tier=TrustTier.PUBLIC_WEB,  # HIGH RISK!
                 scope_volume=1000,
-                scope_sensitivity=4
+                scope_sensitivity=4,
             ),
             # Audit log (safe)
             ToolCallNode(
@@ -116,7 +114,7 @@ def complex_plan() -> ExecutionPlan:
                 arguments={"action": "bulk_update"},
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=1,
-                scope_sensitivity=1
+                scope_sensitivity=1,
             ),
         ],
         edges=[
@@ -124,7 +122,7 @@ def complex_plan() -> ExecutionPlan:
             ("n2", "n3"),  # Web → Join
             ("n3", "n4"),  # Join → Update (RISKY)
             ("n4", "n5"),  # Update → Log
-        ]
+        ],
     )
 
 
@@ -147,7 +145,7 @@ def dag_plan() -> ExecutionPlan:
             ("branch2_a", "branch2_b"),
             ("branch1_b", "merge"),
             ("branch2_b", "merge"),
-        ]
+        ],
     )
 
 
@@ -172,11 +170,7 @@ def test_encoder_initialization():
 def test_toolcallnode_validation():
     """Test ToolCallNode schema validation."""
     # Valid node
-    node = ToolCallNode(
-        node_id="test",
-        tool_name="my_tool",
-        arguments={"key": "value"}
-    )
+    node = ToolCallNode(node_id="test", tool_name="my_tool", arguments={"key": "value"})
     assert node.tool_name == "my_tool"
     assert node.provenance_tier == TrustTier.INTERNAL  # Default
 
@@ -206,15 +200,11 @@ def test_trust_tier_parsing():
     node = ToolCallNode(
         node_id="test",
         tool_name="tool",
-        provenance_tier=1  # type: ignore
+        provenance_tier=1,  # type: ignore
     )
     assert node.provenance_tier == TrustTier.INTERNAL
 
-    node2 = ToolCallNode(
-        node_id="test2",
-        tool_name="tool",
-        provenance_tier=TrustTier.PUBLIC_WEB
-    )
+    node2 = ToolCallNode(node_id="test2", tool_name="tool", provenance_tier=TrustTier.PUBLIC_WEB)
     assert node2.provenance_tier == TrustTier.PUBLIC_WEB
 
 
@@ -258,10 +248,10 @@ def test_dict_input_parsing(encoder: ExecutionEncoder):
                 "arguments": {"key": "value"},
                 "provenance_tier": 1,
                 "scope_volume": 10,
-                "scope_sensitivity": 2
+                "scope_sensitivity": 2,
             }
         ],
-        "edges": []
+        "edges": [],
     }
 
     z_e = encoder(plan_dict)
@@ -276,22 +266,12 @@ def test_dict_input_parsing(encoder: ExecutionEncoder):
 def test_provenance_sensitivity(encoder: ExecutionEncoder):
     """Test encoder distinguishes different trust tiers."""
     plan_internal = ExecutionPlan(
-        nodes=[
-            ToolCallNode(
-                node_id="n1",
-                tool_name="read_db",
-                provenance_tier=TrustTier.INTERNAL
-            )
-        ]
+        nodes=[ToolCallNode(node_id="n1", tool_name="read_db", provenance_tier=TrustTier.INTERNAL)]
     )
 
     plan_public = ExecutionPlan(
         nodes=[
-            ToolCallNode(
-                node_id="n1",
-                tool_name="read_db",
-                provenance_tier=TrustTier.PUBLIC_WEB
-            )
+            ToolCallNode(node_id="n1", tool_name="read_db", provenance_tier=TrustTier.PUBLIC_WEB)
         ]
     )
 
@@ -306,23 +286,11 @@ def test_provenance_sensitivity(encoder: ExecutionEncoder):
 def test_scope_volume_encoding(encoder: ExecutionEncoder):
     """Test scope volume affects encoding."""
     plan_small = ExecutionPlan(
-        nodes=[
-            ToolCallNode(
-                node_id="n1",
-                tool_name="query",
-                scope_volume=10
-            )
-        ]
+        nodes=[ToolCallNode(node_id="n1", tool_name="query", scope_volume=10)]
     )
 
     plan_large = ExecutionPlan(
-        nodes=[
-            ToolCallNode(
-                node_id="n1",
-                tool_name="query",
-                scope_volume=1_000_000
-            )
-        ]
+        nodes=[ToolCallNode(node_id="n1", tool_name="query", scope_volume=1_000_000)]
     )
 
     z_small = encoder(plan_small)
@@ -344,7 +312,7 @@ def test_empty_edges_handling(encoder: ExecutionEncoder):
             ToolCallNode(node_id="n1", tool_name="tool1"),
             ToolCallNode(node_id="n2", tool_name="tool2"),
         ],
-        edges=[]  # No dependencies
+        edges=[],  # No dependencies
     )
 
     z_e = encoder(plan)
@@ -360,7 +328,7 @@ def test_graph_structure_sensitivity(encoder: ExecutionEncoder):
             ToolCallNode(node_id="B", tool_name="tool"),
             ToolCallNode(node_id="C", tool_name="tool"),
         ],
-        edges=[("A", "B"), ("B", "C")]
+        edges=[("A", "B"), ("B", "C")],
     )
 
     # Star: A → B, A → C
@@ -370,7 +338,7 @@ def test_graph_structure_sensitivity(encoder: ExecutionEncoder):
             ToolCallNode(node_id="B", tool_name="tool"),
             ToolCallNode(node_id="C", tool_name="tool"),
         ],
-        edges=[("A", "B"), ("A", "C")]
+        edges=[("A", "B"), ("A", "C")],
     )
 
     z_linear = encoder(linear_plan)
@@ -387,9 +355,7 @@ def test_graph_structure_sensitivity(encoder: ExecutionEncoder):
 
 def test_single_node_plan(encoder: ExecutionEncoder):
     """Test minimal plan (1 node)."""
-    plan = ExecutionPlan(
-        nodes=[ToolCallNode(node_id="only", tool_name="single_tool")]
-    )
+    plan = ExecutionPlan(nodes=[ToolCallNode(node_id="only", tool_name="single_tool")])
 
     z_e = encoder(plan)
     assert z_e.shape == (1, 1024)
@@ -398,10 +364,7 @@ def test_single_node_plan(encoder: ExecutionEncoder):
 def test_max_nodes_truncation(encoder: ExecutionEncoder):
     """Test plan exceeding max_nodes gets truncated."""
     # Create plan with > max_nodes (default 64)
-    nodes = [
-        ToolCallNode(node_id=f"n{i}", tool_name=f"tool{i}")
-        for i in range(100)
-    ]
+    nodes = [ToolCallNode(node_id=f"n{i}", tool_name=f"tool{i}") for i in range(100)]
     plan = ExecutionPlan(nodes=nodes)
 
     z_e = encoder(plan)
@@ -448,7 +411,7 @@ def test_differentiable_adjacency(encoder: ExecutionEncoder):
             ToolCallNode(node_id="n1", tool_name="tool"),
             ToolCallNode(node_id="n2", tool_name="tool"),
         ],
-        edges=[("n1", "n2")]
+        edges=[("n1", "n2")],
     )
 
     encoder.train()
@@ -464,7 +427,9 @@ def test_differentiable_adjacency(encoder: ExecutionEncoder):
 # ============================================================================
 
 
-def test_batch_encoding(encoder: ExecutionEncoder, simple_plan: ExecutionPlan, complex_plan: ExecutionPlan):
+def test_batch_encoding(
+    encoder: ExecutionEncoder, simple_plan: ExecutionPlan, complex_plan: ExecutionPlan
+):
     """Test batch encoding of multiple plans."""
     plans = [simple_plan, complex_plan]
     z_batch = encoder.encode_batch(plans)
@@ -527,7 +492,7 @@ def test_self_loops_in_attention(encoder: ExecutionEncoder):
             ToolCallNode(node_id="n1", tool_name="tool1"),
             ToolCallNode(node_id="n2", tool_name="tool2"),
         ],
-        edges=[]  # No edges
+        edges=[],  # No edges
     )
 
     # Should still encode successfully due to self-loops
@@ -559,14 +524,16 @@ def test_encoding_latency(encoder: ExecutionEncoder, complex_plan: ExecutionPlan
     std_time = (sum((t - mean_time) ** 2 for t in times) / len(times)) ** 0.5
 
     print(f"\n[BENCHMARK] Encoding latency: {mean_time:.2f}ms ± {std_time:.2f}ms")
-    assert mean_time < 150, f"Expected <150ms, got {mean_time:.2f}ms (allows some overhead vs 100ms target)"
+    assert mean_time < 150, (
+        f"Expected <150ms, got {mean_time:.2f}ms (allows some overhead vs 100ms target)"
+    )
 
 
 @pytest.mark.benchmark
 def test_memory_footprint(encoder: ExecutionEncoder):
     """Test model memory footprint."""
     param_count = sum(p.numel() for p in encoder.parameters())
-    param_size_mb = param_count * 4 / (1024 ** 2)  # Float32 = 4 bytes
+    param_size_mb = param_count * 4 / (1024**2)  # Float32 = 4 bytes
 
     print(f"\n[BENCHMARK] Parameters: {param_count:,} ({param_size_mb:.1f} MB)")
     assert param_size_mb < 150, f"Model too large: {param_size_mb:.1f}MB"
@@ -579,9 +546,7 @@ def test_memory_footprint(encoder: ExecutionEncoder):
 
 def test_empty_arguments(encoder: ExecutionEncoder):
     """Test nodes with empty argument dicts."""
-    plan = ExecutionPlan(
-        nodes=[ToolCallNode(node_id="n1", tool_name="tool", arguments={})]
-    )
+    plan = ExecutionPlan(nodes=[ToolCallNode(node_id="n1", tool_name="tool", arguments={})])
 
     z_e = encoder(plan)
     assert z_e.shape == (1, 1024)
@@ -596,7 +561,7 @@ def test_cyclic_graph_handling(encoder: ExecutionEncoder):
             ToolCallNode(node_id="B", tool_name="tool"),
             ToolCallNode(node_id="C", tool_name="tool"),
         ],
-        edges=[("A", "B"), ("B", "C"), ("C", "A")]
+        edges=[("A", "B"), ("B", "C"), ("C", "A")],
     )
 
     # Should not crash (though semantics may be undefined)
@@ -612,7 +577,7 @@ def test_large_scope_values(encoder: ExecutionEncoder):
                 node_id="n1",
                 tool_name="bulk_op",
                 scope_volume=10_000_000,  # 10M records
-                scope_sensitivity=5
+                scope_sensitivity=5,
             )
         ]
     )
@@ -626,9 +591,7 @@ def test_special_characters_in_tool_names(encoder: ExecutionEncoder):
     plan = ExecutionPlan(
         nodes=[
             ToolCallNode(
-                node_id="n1",
-                tool_name="tool.with.dots",
-                arguments={"key-with-dash": "value"}
+                node_id="n1", tool_name="tool.with.dots", arguments={"key-with-dash": "value"}
             )
         ]
     )

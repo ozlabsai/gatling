@@ -38,7 +38,9 @@ class AttackClassification(BaseModel):
 
     pattern: AttackPattern
     confidence: float = Field(ge=0.0, le=1.0)
-    energy_labels: dict[str, float] = Field(default_factory=dict)  # E_hierarchy, E_provenance, E_scope, E_flow
+    energy_labels: dict[str, float] = Field(
+        default_factory=dict
+    )  # E_hierarchy, E_provenance, E_scope, E_flow
     detected_indicators: list[str] = Field(default_factory=list)
     classification_method: str = "keyword"  # "keyword" | "semantic" | "llm"
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -125,7 +127,9 @@ class AttackClassifier:
         self._provenance_rug_pull_re = [
             re.compile(pattern, re.IGNORECASE) for pattern in self.PROVENANCE_RUG_PULL_PATTERNS
         ]
-        self._scope_blowup_re = [re.compile(pattern, re.IGNORECASE) for pattern in self.SCOPE_BLOWUP_PATTERNS]
+        self._scope_blowup_re = [
+            re.compile(pattern, re.IGNORECASE) for pattern in self.SCOPE_BLOWUP_PATTERNS
+        ]
         self._exfiltration_pivot_re = [
             re.compile(pattern, re.IGNORECASE) for pattern in self.EXFILTRATION_PIVOT_PATTERNS
         ]
@@ -147,10 +151,14 @@ class AttackClassifier:
         for pattern_re in self._instruction_shadowing_re:
             matches = pattern_re.findall(prompt)
             if matches:
-                indicators.extend([f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches])
+                indicators.extend(
+                    [f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches]
+                )
 
         if indicators:
-            confidence = min(0.95, 0.7 + (len(indicators) * 0.1))  # More matches = higher confidence
+            confidence = min(
+                0.95, 0.7 + (len(indicators) * 0.1)
+            )  # More matches = higher confidence
             results[AttackPattern.INSTRUCTION_SHADOWING] = (confidence, indicators)
 
         # Check provenance rug-pull
@@ -158,7 +166,9 @@ class AttackClassifier:
         for pattern_re in self._provenance_rug_pull_re:
             matches = pattern_re.findall(prompt)
             if matches:
-                indicators.extend([f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches])
+                indicators.extend(
+                    [f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches]
+                )
 
         if indicators:
             confidence = min(0.95, 0.7 + (len(indicators) * 0.1))
@@ -169,7 +179,9 @@ class AttackClassifier:
         for pattern_re in self._scope_blowup_re:
             matches = pattern_re.findall(prompt)
             if matches:
-                indicators.extend([f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches])
+                indicators.extend(
+                    [f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches]
+                )
 
         if indicators:
             confidence = min(0.95, 0.7 + (len(indicators) * 0.1))
@@ -180,7 +192,9 @@ class AttackClassifier:
         for pattern_re in self._exfiltration_pivot_re:
             matches = pattern_re.findall(prompt)
             if matches:
-                indicators.extend([f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches])
+                indicators.extend(
+                    [f"keyword: {m}" if isinstance(m, str) else f"keyword: {m[0]}" for m in matches]
+                )
 
         if indicators:
             confidence = min(0.95, 0.7 + (len(indicators) * 0.1))
@@ -307,7 +321,9 @@ class AttackClassifier:
         # Stage 2: Semantic similarity (if similarity_score provided)
         # For Lakera gandalf_ignore_instructions, high similarity indicates instruction shadowing
         if similarity_score and similarity_score > 0.825:
-            confidence = 0.7 + ((similarity_score - 0.825) / (1.0 - 0.825) * 0.2)  # Scale to 0.7-0.9
+            confidence = 0.7 + (
+                (similarity_score - 0.825) / (1.0 - 0.825) * 0.2
+            )  # Scale to 0.7-0.9
             pattern = AttackPattern.INSTRUCTION_SHADOWING
 
             return AttackClassification(

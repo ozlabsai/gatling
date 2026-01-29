@@ -6,7 +6,6 @@ Orchestrates the generation of the Gatling-10M dataset Stage A:
 """
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -79,7 +78,7 @@ class GoldTraceGenerator:
         traces_per_domain = total_traces // len(domains)
 
         print(f"\n{'=' * 70}")
-        print(f"🚀 Gatling Gold Trace Generation - Stage A")
+        print("🚀 Gatling Gold Trace Generation - Stage A")
         print(f"{'=' * 70}")
         print(f"Target: {total_traces:,} traces")
         print(f"Domains: {len(domains)}")
@@ -180,14 +179,14 @@ class GoldTraceGenerator:
         duration = datetime.now() - self.stats["start_time"]
 
         print(f"\n{'=' * 70}")
-        print(f"✅ Generation Complete!")
+        print("✅ Generation Complete!")
         print(f"{'=' * 70}")
         print(f"Total traces generated: {len(traces):,}")
         print(f"Total validated: {self.stats['total_validated']:,}")
         print(f"Failed validation: {self.stats['failed_validation']:,}")
         print(f"Duration: {duration}")
         print(f"Rate: {len(traces) / duration.total_seconds():.2f} traces/sec")
-        print(f"\nDomain breakdown:")
+        print("\nDomain breakdown:")
         for domain, count in sorted(
             self.stats["by_domain"].items(), key=lambda x: x[1], reverse=True
         )[:10]:
@@ -195,7 +194,7 @@ class GoldTraceGenerator:
 
         # Diversity metrics
         diversity = self.validator.validate_dataset_diversity(traces)
-        print(f"\nDiversity metrics:")
+        print("\nDiversity metrics:")
         print(f"  Unique domains: {diversity['unique_domains']}")
         print(f"  Unique intents: {diversity['unique_intents']}")
         print(f"  Unique tools: {diversity['unique_tools']}")
@@ -207,9 +206,7 @@ def main():
     """Main entry point for gold trace generation."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Generate gold traces for Gatling Stage A"
-    )
+    parser = argparse.ArgumentParser(description="Generate gold traces for Gatling Stage A")
     parser.add_argument(
         "--total",
         type=int,

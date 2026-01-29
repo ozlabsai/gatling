@@ -8,9 +8,9 @@ interpretable security assessments.
 import pytest
 import torch
 
-from source.energy import create_composite_energy
 from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
 from source.encoders.intent_predictor import ScopeConstraints
+from source.energy import create_composite_energy
 
 
 class TestCompositeEnergy:
@@ -39,17 +39,17 @@ class TestCompositeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=5,
                     scope_sensitivity=1,
-                    arguments={"limit": 5}
+                    arguments={"limit": 5},
                 ),
                 ToolCallNode(
                     tool_name="display_to_user",
                     node_id="node2",
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=5,
-                    scope_sensitivity=1
-                )
+                    scope_sensitivity=1,
+                ),
             ],
-            edges=[("node1", "node2")]
+            edges=[("node1", "node2")],
         )
 
         minimal_scope = ScopeConstraints(limit=5, include_sensitive=False)
@@ -71,17 +71,17 @@ class TestCompositeEnergy:
                     provenance_tier=TrustTier.PUBLIC_WEB,  # Untrusted source!
                     scope_volume=10000,  # Over-scoped
                     scope_sensitivity=5,  # Sensitive data
-                    arguments={"limit": 10000}
+                    arguments={"limit": 10000},
                 ),
                 ToolCallNode(
                     tool_name="send_to_external_api",  # Exfiltration
                     node_id="node2",
                     provenance_tier=TrustTier.PUBLIC_WEB,
                     scope_volume=10000,
-                    scope_sensitivity=5
-                )
+                    scope_sensitivity=5,
+                ),
             ],
-            edges=[("node1", "node2")]
+            edges=[("node1", "node2")],
         )
 
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
@@ -103,26 +103,26 @@ class TestCompositeEnergy:
                     provenance_tier=TrustTier.SIGNED_PARTNER,
                     scope_volume=100,
                     scope_sensitivity=3,
-                    arguments={"limit": 100}
+                    arguments={"limit": 100},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(limit=10)
         explanation = energy.explain(plan, minimal_scope=minimal_scope)
 
-        assert 'total_energy' in explanation
-        assert 'term_energies' in explanation
-        assert 'weighted_contributions' in explanation
-        assert 'risk_assessment' in explanation
-        assert 'recommended_actions' in explanation
+        assert "total_energy" in explanation
+        assert "term_energies" in explanation
+        assert "weighted_contributions" in explanation
+        assert "risk_assessment" in explanation
+        assert "recommended_actions" in explanation
 
         # All four terms should be present
-        assert 'hierarchy' in explanation['term_energies']
-        assert 'provenance' in explanation['term_energies']
-        assert 'scope' in explanation['term_energies']
-        assert 'flow' in explanation['term_energies']
+        assert "hierarchy" in explanation["term_energies"]
+        assert "provenance" in explanation["term_energies"]
+        assert "scope" in explanation["term_energies"]
+        assert "flow" in explanation["term_energies"]
 
     def test_term_disabling_for_ablation(self):
         """Should be able to disable individual terms."""
@@ -135,37 +135,34 @@ class TestCompositeEnergy:
                     node_id="node1",
                     provenance_tier=TrustTier.PUBLIC_WEB,
                     scope_volume=100,
-                    scope_sensitivity=3
+                    scope_sensitivity=3,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Full energy
         E_full = energy(plan)
 
         # Disable all terms
-        energy.disable_term('hierarchy')
-        energy.disable_term('provenance')
-        energy.disable_term('scope')
-        energy.disable_term('flow')
+        energy.disable_term("hierarchy")
+        energy.disable_term("provenance")
+        energy.disable_term("scope")
+        energy.disable_term("flow")
 
         E_disabled = energy(plan)
 
         assert float(E_disabled) == 0.0, "All terms disabled should yield zero energy"
 
         # Re-enable one term
-        energy.enable_term('provenance')
+        energy.enable_term("provenance")
         E_provenance_only = energy(plan)
 
         assert 0.0 < float(E_provenance_only) < float(E_full)
 
     def test_learnable_weights(self):
         """Weights should be trainable when learnable_weights=True."""
-        energy = create_composite_energy(
-            use_latent_modulation=False,
-            learnable_weights=True
-        )
+        energy = create_composite_energy(use_latent_modulation=False, learnable_weights=True)
 
         assert energy.weights.requires_grad, "Weights should be trainable"
 
@@ -173,12 +170,10 @@ class TestCompositeEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="test_tool",
-                    node_id="node1",
-                    provenance_tier=TrustTier.PUBLIC_WEB
+                    tool_name="test_tool", node_id="node1", provenance_tier=TrustTier.PUBLIC_WEB
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         E = energy(plan)
@@ -198,14 +193,14 @@ class TestCompositeEnergy:
                     node_id="node1",
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
-                    scope_sensitivity=1
+                    scope_sensitivity=1,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         explanation = energy.explain(safe_plan)
-        assert explanation['risk_assessment'] == 'safe'
+        assert explanation["risk_assessment"] == "safe"
 
         # Critical plan
         critical_plan = ExecutionPlan(
@@ -215,22 +210,19 @@ class TestCompositeEnergy:
                     node_id="node1",
                     provenance_tier=TrustTier.PUBLIC_WEB,
                     scope_volume=10000,
-                    scope_sensitivity=5
+                    scope_sensitivity=5,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         explanation = energy.explain(critical_plan)
         # Should be at least 'suspicious', likely 'critical'
-        assert explanation['risk_assessment'] in ['suspicious', 'critical']
+        assert explanation["risk_assessment"] in ["suspicious", "critical"]
 
     def test_differentiability_end_to_end(self):
         """Full energy should backpropagate through all terms."""
-        energy = create_composite_energy(
-            use_latent_modulation=True,
-            learnable_weights=True
-        )
+        energy = create_composite_energy(use_latent_modulation=True, learnable_weights=True)
         energy.train()
 
         plan = ExecutionPlan(
@@ -240,10 +232,10 @@ class TestCompositeEnergy:
                     node_id="node1",
                     provenance_tier=TrustTier.PUBLIC_WEB,
                     scope_volume=100,
-                    scope_sensitivity=3
+                    scope_sensitivity=3,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         z_g = torch.randn(1, 1024, requires_grad=True)
@@ -274,12 +266,12 @@ class TestCompositePerformance:
                 node_id=f"node{i}",
                 provenance_tier=TrustTier(i % 3 + 1),
                 scope_volume=10,
-                scope_sensitivity=i % 5 + 1
+                scope_sensitivity=i % 5 + 1,
             )
             for i in range(10)
         ]
 
-        edges = [(f"node{i}", f"node{i+1}") for i in range(9)]
+        edges = [(f"node{i}", f"node{i + 1}") for i in range(9)]
 
         plan = ExecutionPlan(nodes=nodes, edges=edges)
         minimal_scope = ScopeConstraints(limit=5)

@@ -26,10 +26,8 @@ from pydantic import BaseModel
 
 from source.dataset.models import (
     GoldTrace,
-    ScopeMetadata,
     SensitivityTier,
     SystemPolicy,
-    ToolCall,
     ToolCallGraph,
     TrustTier,
 )
@@ -97,9 +95,7 @@ class PolicyBoundaryMutator:
             "by_violation_type": {},
         }
 
-    def mutate_traces(
-        self, gold_traces: list[GoldTrace]
-    ) -> list[BoundaryViolation]:
+    def mutate_traces(self, gold_traces: list[GoldTrace]) -> list[BoundaryViolation]:
         """
         Apply boundary mutations to gold traces.
 
@@ -113,9 +109,7 @@ class PolicyBoundaryMutator:
         n_mutations = int(len(gold_traces) * self.mutation_rate)
 
         # Randomly select traces to mutate
-        traces_to_mutate = random.sample(
-            gold_traces, min(n_mutations, len(gold_traces))
-        )
+        traces_to_mutate = random.sample(gold_traces, min(n_mutations, len(gold_traces)))
 
         for trace in traces_to_mutate:
             self.stats["total_attempts"] += 1
@@ -143,15 +137,12 @@ class PolicyBoundaryMutator:
 
         success_rate = len(violations) / n_mutations * 100 if n_mutations > 0 else 0
         print(
-            f"✓ Created {len(violations)} boundary violations "
-            f"(success rate: {success_rate:.1f}%)"
+            f"✓ Created {len(violations)} boundary violations (success rate: {success_rate:.1f}%)"
         )
 
         return violations
 
-    def _apply_boundary_mutation(
-        self, trace: GoldTrace
-    ) -> BoundaryViolation | None:
+    def _apply_boundary_mutation(self, trace: GoldTrace) -> BoundaryViolation | None:
         """
         Apply a single boundary mutation to a trace.
 
@@ -198,8 +189,7 @@ class PolicyBoundaryMutator:
 
         # Check for numeric scope limits
         if policy.scope_limits and any(
-            k in policy.scope_limits
-            for k in ["max_results", "max_export_rows", "max_recipients"]
+            k in policy.scope_limits for k in ["max_results", "max_export_rows", "max_recipients"]
         ):
             applicable.extend(
                 [BoundaryViolationType.NUMERIC_EDGE, BoundaryViolationType.NUMERIC_NEAR]
@@ -212,17 +202,11 @@ class PolicyBoundaryMutator:
             applicable.append(BoundaryViolationType.TEMPORAL_OVERFLOW)
 
         # Check for access control rules
-        if any(
-            "department" in rule.lower() or "own" in rule.lower()
-            for rule in policy.rules
-        ):
+        if any("department" in rule.lower() or "own" in rule.lower() for rule in policy.rules):
             applicable.append(BoundaryViolationType.ACCESS_BOUNDARY)
 
         # Check for approval requirements
-        if any(
-            "approval" in rule.lower() or "require" in rule.lower()
-            for rule in policy.rules
-        ):
+        if any("approval" in rule.lower() or "require" in rule.lower() for rule in policy.rules):
             applicable.append(BoundaryViolationType.APPROVAL_BYPASS)
 
         # Sensitivity creep is always applicable
@@ -259,9 +243,7 @@ class PolicyBoundaryMutator:
                 # For email recipients
                 if isinstance(call.arguments["to"], list):
                     # Add one more recipient than allowed
-                    call.arguments["to"] = [
-                        f"user{i}@example.com" for i in range(limit_value + 1)
-                    ]
+                    call.arguments["to"] = [f"user{i}@example.com" for i in range(limit_value + 1)]
                     modified = True
                     break
 
@@ -321,9 +303,7 @@ class PolicyBoundaryMutator:
             severity_score=0.2,  # Slightly more obvious
         )
 
-    def _mutate_temporal_overflow(
-        self, trace: GoldTrace
-    ) -> BoundaryViolation | None:
+    def _mutate_temporal_overflow(self, trace: GoldTrace) -> BoundaryViolation | None:
         """
         Mutate by extending temporal range beyond policy limit.
 
@@ -381,9 +361,7 @@ class PolicyBoundaryMutator:
         policy = trace.policy
 
         # Check for access control rules
-        has_department_rule = any(
-            "department" in rule.lower() for rule in policy.rules
-        )
+        has_department_rule = any("department" in rule.lower() for rule in policy.rules)
         has_ownership_rule = any("own" in rule.lower() for rule in policy.rules)
 
         if not (has_department_rule or has_ownership_rule):
@@ -417,8 +395,12 @@ class PolicyBoundaryMutator:
         violation_id = f"{trace.trace_id}_boundary_access"
 
         violated_rule = next(
-            (rule for rule in policy.rules if "own" in rule.lower() or "department" in rule.lower()),
-            "access control policy"
+            (
+                rule
+                for rule in policy.rules
+                if "own" in rule.lower() or "department" in rule.lower()
+            ),
+            "access control policy",
         )
 
         return BoundaryViolation(
@@ -441,9 +423,7 @@ class PolicyBoundaryMutator:
         policy = trace.policy
 
         # Check for approval rules
-        approval_rules = [
-            rule for rule in policy.rules if "approval" in rule.lower()
-        ]
+        approval_rules = [rule for rule in policy.rules if "approval" in rule.lower()]
         if not approval_rules:
             return None
 
@@ -476,9 +456,7 @@ class PolicyBoundaryMutator:
             severity_score=0.3,
         )
 
-    def _mutate_sensitivity_creep(
-        self, trace: GoldTrace
-    ) -> BoundaryViolation | None:
+    def _mutate_sensitivity_creep(self, trace: GoldTrace) -> BoundaryViolation | None:
         """
         Mutate by increasing data sensitivity by one tier.
 
@@ -521,9 +499,7 @@ class PolicyBoundaryMutator:
             severity_score=0.2,
         )
 
-    def _find_numeric_limit(
-        self, policy: SystemPolicy
-    ) -> tuple[str | None, int | None]:
+    def _find_numeric_limit(self, policy: SystemPolicy) -> tuple[str | None, int | None]:
         """
         Find the most relevant numeric limit in the policy.
 

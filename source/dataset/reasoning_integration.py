@@ -366,9 +366,7 @@ class RubricHubDataset:
 
             # Treat rubric criteria as reasoning steps
             steps = []
-            for criterion_idx, (criterion_name, criterion_desc) in enumerate(
-                rubric.items(), 1
-            ):
+            for criterion_idx, (criterion_name, criterion_desc) in enumerate(rubric.items(), 1):
                 action, action_input = self.converter._extract_action(str(criterion_desc))
                 steps.append(
                     ReasoningStep(

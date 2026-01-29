@@ -4,8 +4,6 @@ Tests for policy boundary violation generator.
 Tests the boundary mutation system for Stage B of the dataset pipeline.
 """
 
-import pytest
-from datetime import datetime
 
 from source.dataset.conversations.boundary_mutator import (
     BoundaryViolation,
@@ -241,6 +239,7 @@ class TestPolicyBoundaryMutator:
         # Should be between 210-220 (200 + 5-10%)
         # Extract the number from the description
         import re
+
         match = re.search(r"Requested (\d+) items", violation.violation_description)
         assert match is not None
         requested = int(match.group(1))
@@ -349,7 +348,10 @@ class TestPolicyBoundaryMutator:
 
         assert violation is not None
         assert violation.violation_type == BoundaryViolationType.ACCESS_BOUNDARY
-        assert "Adjacent_Department" in str(violation.violation_description) or "adjacent" in violation.violation_description.lower()
+        assert (
+            "Adjacent_Department" in str(violation.violation_description)
+            or "adjacent" in violation.violation_description.lower()
+        )
 
     def test_mutate_sensitivity_creep(self):
         """Test sensitivity tier escalation."""

@@ -28,11 +28,12 @@ from pydantic import BaseModel, Field, field_validator
 
 class PolicySchema(BaseModel):
     """Validated schema for policy inputs."""
+
     document: dict[str, Any] | str
     user_role: str = Field(..., min_length=1, description="User role")
     session_context: dict[str, Any] | None = Field(default_factory=dict)
 
-    @field_validator('document')
+    @field_validator("document")
     @classmethod
     def parse_document(cls, v):
         """Parse string documents to dict."""
@@ -73,11 +74,7 @@ class SparseStructuredAttention(nn.Module):
     """
 
     def __init__(
-        self,
-        hidden_dim: int,
-        num_heads: int = 8,
-        window_size: int = 32,
-        dropout: float = 0.1
+        self, hidden_dim: int, num_heads: int = 8, window_size: int = 32, dropout: float = 0.1
     ):
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -92,13 +89,10 @@ class SparseStructuredAttention(nn.Module):
         self.v_proj = nn.Linear(hidden_dim, hidden_dim)
         self.out_proj = nn.Linear(hidden_dim, hidden_dim)
         self.dropout = nn.Dropout(dropout)
-        self.scale = self.head_dim ** -0.5
+        self.scale = self.head_dim**-0.5
 
     def _create_attention_mask(
-        self,
-        seq_len: int,
-        is_global: torch.Tensor,
-        device: torch.device
+        self, seq_len: int, is_global: torch.Tensor, device: torch.device
     ) -> torch.Tensor:
         """Create sparse attention mask with local windows and global tokens."""
         mask = torch.zeros(seq_len, seq_len, device=device)
@@ -121,11 +115,7 @@ class SparseStructuredAttention(nn.Module):
 
         return mask_batch
 
-    def forward(
-        self,
-        x: torch.Tensor,
-        is_global: torch.Tensor | None = None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, is_global: torch.Tensor | None = None) -> torch.Tensor:
         """Apply sparse structured attention."""
         batch_size, seq_len, _ = x.shape
 
@@ -141,7 +131,7 @@ class SparseStructuredAttention(nn.Module):
         mask = self._create_attention_mask(seq_len, is_global, x.device)
         mask = mask.unsqueeze(1)
 
-        scores = scores.masked_fill(mask == 0, float('-inf'))
+        scores = scores.masked_fill(mask == 0, float("-inf"))
         attn_weights = F.softmax(scores, dim=-1)
         attn_weights = self.dropout(attn_weights)
 
@@ -164,7 +154,7 @@ class TransformerBlock(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim * 4, hidden_dim),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
         self.norm2 = nn.LayerNorm(hidden_dim)
 
@@ -193,7 +183,7 @@ class GovernanceEncoder(nn.Module):
         window_size: int = 32,
         max_seq_len: int = 512,
         dropout: float = 0.1,
-        vocab_size: int = 10000
+        vocab_size: int = 10000,
     ):
         super().__init__()
 
@@ -206,10 +196,12 @@ class GovernanceEncoder(nn.Module):
         self.structural_embedding = StructuralEmbedding(hidden_dim)
         self.role_embedding = nn.Embedding(32, hidden_dim)
 
-        self.layers = nn.ModuleList([
-            TransformerBlock(hidden_dim, num_heads, window_size, dropout)
-            for _ in range(num_layers)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                TransformerBlock(hidden_dim, num_heads, window_size, dropout)
+                for _ in range(num_layers)
+            ]
+        )
 
         self.attention_pool = nn.Linear(hidden_dim, 1)
         self.projection = nn.Sequential(
@@ -217,14 +209,16 @@ class GovernanceEncoder(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(latent_dim * 2, latent_dim),
-            nn.LayerNorm(latent_dim)
+            nn.LayerNorm(latent_dim),
         )
 
         self.input_norm = nn.LayerNorm(hidden_dim)
         self._role_vocab: dict[str, int] = {}
         self._next_role_idx = 0
 
-    def _flatten_policy(self, policy_dict: dict[str, Any], prefix: str = "", depth: int = 0) -> list[dict[str, Any]]:
+    def _flatten_policy(
+        self, policy_dict: dict[str, Any], prefix: str = "", depth: int = 0
+    ) -> list[dict[str, Any]]:
         """Flatten nested policy dict to sequence with structural metadata."""
         tokens = []
 
@@ -234,39 +228,47 @@ class GovernanceEncoder(nn.Module):
             if isinstance(value, dict):
                 node_type = 0
                 is_global = depth <= 1
-                tokens.append({
-                    'token': full_key,
-                    'depth': min(depth, 7),
-                    'node_type': node_type,
-                    'is_global': is_global
-                })
+                tokens.append(
+                    {
+                        "token": full_key,
+                        "depth": min(depth, 7),
+                        "node_type": node_type,
+                        "is_global": is_global,
+                    }
+                )
                 tokens.extend(self._flatten_policy(value, full_key, depth + 1))
             elif isinstance(value, list):
                 node_type = 1
-                tokens.append({
-                    'token': full_key,
-                    'depth': min(depth, 7),
-                    'node_type': node_type,
-                    'is_global': False
-                })
+                tokens.append(
+                    {
+                        "token": full_key,
+                        "depth": min(depth, 7),
+                        "node_type": node_type,
+                        "is_global": False,
+                    }
+                )
                 for i, item in enumerate(value):
                     if isinstance(item, dict):
                         tokens.extend(self._flatten_policy(item, f"{full_key}[{i}]", depth + 1))
                     else:
-                        tokens.append({
-                            'token': str(item),
-                            'depth': min(depth + 1, 7),
-                            'node_type': 2,
-                            'is_global': False
-                        })
+                        tokens.append(
+                            {
+                                "token": str(item),
+                                "depth": min(depth + 1, 7),
+                                "node_type": 2,
+                                "is_global": False,
+                            }
+                        )
             else:
                 node_type = 2
-                tokens.append({
-                    'token': f"{full_key}={value}",
-                    'depth': min(depth, 7),
-                    'node_type': node_type,
-                    'is_global': False
-                })
+                tokens.append(
+                    {
+                        "token": f"{full_key}={value}",
+                        "depth": min(depth, 7),
+                        "node_type": node_type,
+                        "is_global": False,
+                    }
+                )
 
         return tokens
 
@@ -287,7 +289,7 @@ class GovernanceEncoder(nn.Module):
         self,
         policy: dict[str, Any] | PolicySchema,
         user_role: str | None = None,
-        session_context: dict[str, Any] | None = None
+        session_context: dict[str, Any] | None = None,
     ) -> torch.Tensor:
         """Encode governance policy into latent vector."""
         if isinstance(policy, PolicySchema):
@@ -302,25 +304,22 @@ class GovernanceEncoder(nn.Module):
         flattened = self._flatten_policy(policy_dict)  # type: ignore[arg-type]
 
         if len(flattened) > self.max_seq_len:
-            global_tokens = [t for t in flattened if t['is_global']]
-            non_global = [t for t in flattened if not t['is_global']]
+            global_tokens = [t for t in flattened if t["is_global"]]
+            non_global = [t for t in flattened if not t["is_global"]]
             remaining = self.max_seq_len - len(global_tokens)
             flattened = global_tokens + non_global[:remaining]
 
         seq_len = len(flattened)
         if seq_len < self.max_seq_len:
-            padding = [{
-                'token': '',
-                'depth': 0,
-                'node_type': 3,
-                'is_global': False
-            }] * (self.max_seq_len - seq_len)
+            padding = [{"token": "", "depth": 0, "node_type": 3, "is_global": False}] * (
+                self.max_seq_len - seq_len
+            )
             flattened.extend(padding)
 
-        token_ids = torch.tensor([self._tokenize(t['token']) for t in flattened]).unsqueeze(0)
-        depth_ids = torch.tensor([t['depth'] for t in flattened]).unsqueeze(0)
-        node_type_ids = torch.tensor([t['node_type'] for t in flattened]).unsqueeze(0)
-        is_global = torch.tensor([t['is_global'] for t in flattened], dtype=torch.bool).unsqueeze(0)
+        token_ids = torch.tensor([self._tokenize(t["token"]) for t in flattened]).unsqueeze(0)
+        depth_ids = torch.tensor([t["depth"] for t in flattened]).unsqueeze(0)
+        node_type_ids = torch.tensor([t["node_type"] for t in flattened]).unsqueeze(0)
+        is_global = torch.tensor([t["is_global"] for t in flattened], dtype=torch.bool).unsqueeze(0)
         position_ids = torch.arange(self.max_seq_len).unsqueeze(0)
 
         token_emb = self.token_embedding(token_ids)
@@ -355,9 +354,7 @@ class GovernanceEncoder(nn.Module):
 
 
 def create_governance_encoder(
-    latent_dim: int = 1024,
-    checkpoint_path: str | None = None,
-    device: str = "cpu"
+    latent_dim: int = 1024, checkpoint_path: str | None = None, device: str = "cpu"
 ) -> GovernanceEncoder:
     """Factory function to create GovernanceEncoder."""
     model = GovernanceEncoder(latent_dim=latent_dim)

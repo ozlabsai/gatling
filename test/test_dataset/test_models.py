@@ -4,8 +4,6 @@ Tests for dataset data models.
 Validates the Pydantic models used for gold trace generation.
 """
 
-import pytest
-from datetime import datetime
 
 from source.dataset.models import (
     GoldTrace,

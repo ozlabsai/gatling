@@ -26,7 +26,6 @@ Example:
     Output: {'limit': 100, 'date_range_days': 90}
 """
 
-
 import torch
 import torch.nn as nn
 from pydantic import BaseModel, Field
@@ -35,35 +34,26 @@ from pydantic import BaseModel, Field
 class ScopeConstraints(BaseModel):
     """Structured output representing minimal scope budget."""
 
-    limit: int | None = Field(
-        default=None,
-        ge=1,
-        description="Maximum number of items to retrieve"
-    )
-    date_range_days: int | None = Field(
-        default=None,
-        ge=1,
-        description="Lookback window in days"
-    )
+    limit: int | None = Field(default=None, ge=1, description="Maximum number of items to retrieve")
+    date_range_days: int | None = Field(default=None, ge=1, description="Lookback window in days")
     max_depth: int | None = Field(
-        default=None,
-        ge=1,
-        le=10,
-        description="Maximum recursion/traversal depth"
+        default=None, ge=1, le=10, description="Maximum recursion/traversal depth"
     )
     include_sensitive: bool = Field(
-        default=False,
-        description="Whether sensitive fields are required"
+        default=False, description="Whether sensitive fields are required"
     )
 
     def to_tensor(self) -> torch.Tensor:
         """Convert to numerical tensor for training."""
-        return torch.tensor([
-            self.limit or 0,
-            self.date_range_days or 0,
-            self.max_depth or 0,
-            int(self.include_sensitive)
-        ], dtype=torch.float32)
+        return torch.tensor(
+            [
+                self.limit or 0,
+                self.date_range_days or 0,
+                self.max_depth or 0,
+                int(self.include_sensitive),
+            ],
+            dtype=torch.float32,
+        )
 
     @classmethod
     def from_tensor(cls, tensor: torch.Tensor) -> "ScopeConstraints":
@@ -73,7 +63,7 @@ class ScopeConstraints(BaseModel):
             limit=int(vals[0]) if vals[0] > 0 else None,
             date_range_days=int(vals[1]) if vals[1] > 0 else None,
             max_depth=int(vals[2]) if vals[2] > 0 else None,
-            include_sensitive=bool(vals[3] > 0.5)
+            include_sensitive=bool(vals[3] > 0.5),
         )
 
 
@@ -92,7 +82,7 @@ class QueryEncoder(nn.Module):
         num_layers: int = 2,
         num_heads: int = 4,
         max_seq_len: int = 128,
-        dropout: float = 0.1
+        dropout: float = 0.1,
     ):
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -107,9 +97,9 @@ class QueryEncoder(nn.Module):
             nhead=num_heads,
             dim_feedforward=hidden_dim * 4,
             dropout=dropout,
-            activation='gelu',
+            activation="gelu",
             batch_first=True,
-            norm_first=True  # Pre-norm for training stability
+            norm_first=True,  # Pre-norm for training stability
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
 
@@ -165,7 +155,8 @@ class SchemaEncoder(nn.Module):
 
         # Parameter type embeddings
         self.param_type_embedding = nn.Embedding(
-            8, hidden_dim  # integer, string, boolean, array, object, etc.
+            8,
+            hidden_dim,  # integer, string, boolean, array, object, etc.
         )
 
         # Schema encoder (simple MLP for v0.1.0)
@@ -174,7 +165,7 @@ class SchemaEncoder(nn.Module):
             nn.GELU(),
             nn.Dropout(0.1),
             nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.LayerNorm(hidden_dim)
+            nn.LayerNorm(hidden_dim),
         )
 
     def forward(self, schema_features: torch.Tensor) -> torch.Tensor:
@@ -211,28 +202,22 @@ class ScopePredictor(nn.Module):
             nn.Linear(hidden_dim, 128),
             nn.GELU(),
             nn.Linear(128, 1),
-            nn.Softplus()  # Ensures positive output
+            nn.Softplus(),  # Ensures positive output
         )
 
         self.date_range_head = nn.Sequential(
-            nn.Linear(hidden_dim, 128),
-            nn.GELU(),
-            nn.Linear(128, 1),
-            nn.Softplus()
+            nn.Linear(hidden_dim, 128), nn.GELU(), nn.Linear(128, 1), nn.Softplus()
         )
 
         self.depth_head = nn.Sequential(
             nn.Linear(hidden_dim, 128),
             nn.GELU(),
             nn.Linear(128, 1),
-            nn.Sigmoid()  # [0, 1], then scale to [1, 10]
+            nn.Sigmoid(),  # [0, 1], then scale to [1, 10]
         )
 
         self.sensitive_head = nn.Sequential(
-            nn.Linear(hidden_dim, 128),
-            nn.GELU(),
-            nn.Linear(128, 1),
-            nn.Sigmoid()
+            nn.Linear(hidden_dim, 128), nn.GELU(), nn.Linear(128, 1), nn.Sigmoid()
         )
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
@@ -277,7 +262,7 @@ class SemanticIntentPredictor(nn.Module):
         num_heads: int = 4,
         max_seq_len: int = 128,
         max_params: int = 16,
-        dropout: float = 0.1
+        dropout: float = 0.1,
     ):
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -289,26 +274,18 @@ class SemanticIntentPredictor(nn.Module):
             num_layers=num_encoder_layers,
             num_heads=num_heads,
             max_seq_len=max_seq_len,
-            dropout=dropout
+            dropout=dropout,
         )
 
-        self.schema_encoder = SchemaEncoder(
-            hidden_dim=hidden_dim,
-            max_params=max_params
-        )
+        self.schema_encoder = SchemaEncoder(hidden_dim=hidden_dim, max_params=max_params)
 
         # Cross-attention: Query attends to Schema
         self.cross_attention = nn.MultiheadAttention(
-            embed_dim=hidden_dim,
-            num_heads=num_heads,
-            dropout=dropout,
-            batch_first=True
+            embed_dim=hidden_dim, num_heads=num_heads, dropout=dropout, batch_first=True
         )
 
         self.fusion = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.GELU(),
-            nn.LayerNorm(hidden_dim)
+            nn.Linear(hidden_dim * 2, hidden_dim), nn.GELU(), nn.LayerNorm(hidden_dim)
         )
 
         # Scope prediction head
@@ -327,11 +304,7 @@ class SemanticIntentPredictor(nn.Module):
             elif isinstance(module, nn.Embedding):
                 nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(
-        self,
-        query_tokens: torch.Tensor,
-        schema_features: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, query_tokens: torch.Tensor, schema_features: torch.Tensor) -> torch.Tensor:
         """
         Predict minimal scope constraints.
 
@@ -351,9 +324,7 @@ class SemanticIntentPredictor(nn.Module):
         schema_expanded = schema_latent.unsqueeze(1)  # [B, 1, hidden_dim]
 
         attended, _ = self.cross_attention(
-            query=query_expanded,
-            key=schema_expanded,
-            value=schema_expanded
+            query=query_expanded, key=schema_expanded, value=schema_expanded
         )  # [B, 1, hidden_dim]
 
         attended = attended.squeeze(1)  # [B, hidden_dim]
@@ -368,9 +339,7 @@ class SemanticIntentPredictor(nn.Module):
         return scope_predictions
 
     def predict_constraints(
-        self,
-        query_tokens: torch.Tensor,
-        schema_features: torch.Tensor
+        self, query_tokens: torch.Tensor, schema_features: torch.Tensor
     ) -> list[ScopeConstraints]:
         """
         High-level API returning structured ScopeConstraints.
@@ -385,10 +354,7 @@ class SemanticIntentPredictor(nn.Module):
         with torch.no_grad():
             predictions = self.forward(query_tokens, schema_features)
 
-        return [
-            ScopeConstraints.from_tensor(pred)
-            for pred in predictions
-        ]
+        return [ScopeConstraints.from_tensor(pred) for pred in predictions]
 
     def count_parameters(self) -> int:
         """Count trainable parameters."""
@@ -407,9 +373,7 @@ def hash_tokenize(text: str, vocab_size: int = 50000) -> list[int]:
 
 
 def create_intent_predictor(
-    vocab_size: int = 50000,
-    hidden_dim: int = 256,
-    num_layers: int = 2
+    vocab_size: int = 50000, hidden_dim: int = 256, num_layers: int = 2
 ) -> SemanticIntentPredictor:
     """
     Factory function for creating SemanticIntentPredictor.
@@ -423,14 +387,12 @@ def create_intent_predictor(
         Initialized SemanticIntentPredictor
     """
     model = SemanticIntentPredictor(
-        vocab_size=vocab_size,
-        hidden_dim=hidden_dim,
-        num_encoder_layers=num_layers
+        vocab_size=vocab_size, hidden_dim=hidden_dim, num_encoder_layers=num_layers
     )
 
     # Log model size
     num_params = model.count_parameters()
-    model_size_mb = num_params * 4 / (1024 ** 2)  # 4 bytes per float32
+    model_size_mb = num_params * 4 / (1024**2)  # 4 bytes per float32
 
     print("SemanticIntentPredictor initialized:")
     print(f"  Parameters: {num_params:,} ({model_size_mb:.1f}MB)")

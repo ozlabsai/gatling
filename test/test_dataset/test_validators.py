@@ -4,7 +4,6 @@ Tests for trace validators.
 Validates the validation logic for gold traces.
 """
 
-import pytest
 
 from source.dataset.models import (
     GoldTrace,
@@ -138,9 +137,7 @@ class TestTraceValidator:
     def test_validate_policy_compliance_valid(self):
         """Test policy compliance on valid trace."""
         trace = self.create_valid_trace()
-        is_compliant, violations = self.validator.validate_policy_compliance(
-            trace, trace.policy
-        )
+        is_compliant, violations = self.validator.validate_policy_compliance(trace, trace.policy)
 
         assert is_compliant is True
         assert len(violations) == 0
@@ -152,9 +149,7 @@ class TestTraceValidator:
         # Use forbidden operation
         trace.graph.calls[0].tool_id = "finance.delete"
 
-        is_compliant, violations = self.validator.validate_policy_compliance(
-            trace, trace.policy
-        )
+        is_compliant, violations = self.validator.validate_policy_compliance(trace, trace.policy)
 
         assert is_compliant is False
         assert any("forbidden" in v.lower() for v in violations)
@@ -167,9 +162,7 @@ class TestTraceValidator:
         trace.graph.calls[0].arguments["limit"] = 200  # Exceeds max of 100
         trace.graph.calls[0].scope.rows_requested = 200
 
-        is_compliant, violations = self.validator.validate_policy_compliance(
-            trace, trace.policy
-        )
+        is_compliant, violations = self.validator.validate_policy_compliance(trace, trace.policy)
 
         assert is_compliant is False
         assert any("limit" in v.lower() for v in violations)

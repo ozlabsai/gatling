@@ -18,7 +18,7 @@ from source.dataset.conversations.boundary_mutator import (
     BoundaryViolation,
     BoundaryViolationType,
 )
-from source.dataset.models import GoldTrace, SystemPolicy
+from source.dataset.models import GoldTrace
 
 
 class ValidationReport(BaseModel):
@@ -68,9 +68,7 @@ class BoundaryViolationValidator:
 
         # Check 1: Violation type is valid
         if not isinstance(violation.violation_type, BoundaryViolationType):
-            issues.append(
-                f"Invalid violation type: {violation.violation_type}"
-            )
+            issues.append(f"Invalid violation type: {violation.violation_type}")
 
         # Check 2: Severity is within threshold
         subtlety_check = violation.severity_score <= self.max_severity
@@ -85,9 +83,7 @@ class BoundaryViolationValidator:
             issues.append("Invalid modified graph format")
 
         # Check 4: Violation description is meaningful
-        if not violation.violation_description or len(
-            violation.violation_description
-        ) < 10:
+        if not violation.violation_description or len(violation.violation_description) < 10:
             warnings.append("Violation description is too short or missing")
 
         # Check 5: Policy rule is specified
@@ -97,9 +93,7 @@ class BoundaryViolationValidator:
         # Check 6: If original trace provided, verify it's actually different
         if original_trace:
             if not self._verify_mutation(violation, original_trace):
-                issues.append(
-                    "Violation plan is identical to original trace"
-                )
+                issues.append("Violation plan is identical to original trace")
 
         violation_confirmed = len(issues) == 0
         is_valid = violation_confirmed and subtlety_check and format_check
@@ -132,9 +126,7 @@ class BoundaryViolationValidator:
         except Exception:
             return False
 
-    def _verify_mutation(
-        self, violation: BoundaryViolation, original_trace: GoldTrace
-    ) -> bool:
+    def _verify_mutation(self, violation: BoundaryViolation, original_trace: GoldTrace) -> bool:
         """
         Verify that the violation is actually different from original.
 
@@ -150,9 +142,7 @@ class BoundaryViolationValidator:
 
         return True
 
-    def validate_dataset_diversity(
-        self, violations: list[BoundaryViolation]
-    ) -> dict[str, Any]:
+    def validate_dataset_diversity(self, violations: list[BoundaryViolation]) -> dict[str, Any]:
         """
         Validate diversity of violation dataset.
 
@@ -183,23 +173,17 @@ class BoundaryViolationValidator:
         # Should have at least 3 different violation types
         unique_types = len(type_counts)
         if unique_types < 3:
-            issues.append(
-                f"Only {unique_types} violation types (expected at least 3)"
-            )
+            issues.append(f"Only {unique_types} violation types (expected at least 3)")
 
         # No single type should dominate (>60%)
         max_type_pct = max(type_counts.values()) / len(violations) * 100
         if max_type_pct > 60:
-            warnings.append(
-                f"One violation type dominates: {max_type_pct:.1f}%"
-            )
+            warnings.append(f"One violation type dominates: {max_type_pct:.1f}%")
 
         # Severity should have reasonable spread
         severity_range = max_severity - min_severity
         if severity_range < 0.1:
-            warnings.append(
-                f"Limited severity range: {severity_range:.3f}"
-            )
+            warnings.append(f"Limited severity range: {severity_range:.3f}")
 
         is_diverse = len(issues) == 0
 
@@ -217,9 +201,7 @@ class BoundaryViolationValidator:
             "warnings": warnings,
         }
 
-    def validate_batch(
-        self, violations: list[BoundaryViolation]
-    ) -> dict[str, Any]:
+    def validate_batch(self, violations: list[BoundaryViolation]) -> dict[str, Any]:
         """
         Validate a batch of violations.
 
@@ -248,9 +230,7 @@ class BoundaryViolationValidator:
             "total": len(violations),
             "valid": valid_count,
             "invalid": invalid_count,
-            "validation_rate": valid_count / len(violations) * 100
-            if violations
-            else 0,
+            "validation_rate": valid_count / len(violations) * 100 if violations else 0,
             "diversity": diversity,
             "common_issues": self._summarize_issues(all_issues),
         }

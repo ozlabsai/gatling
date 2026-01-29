@@ -7,8 +7,8 @@ Validates RAG-injection detection and control flow hijacking prevention.
 import pytest
 import torch
 
-from source.energy.hierarchy import HierarchyEnergy, create_hierarchy_energy
 from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
+from source.energy.hierarchy import HierarchyEnergy, create_hierarchy_energy
 
 
 class TestHierarchyEnergy:
@@ -27,13 +27,9 @@ class TestHierarchyEnergy:
 
         plan = ExecutionPlan(
             nodes=[
-                ToolCallNode(
-                    tool_name="noop",
-                    node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL
-                )
+                ToolCallNode(tool_name="noop", node_id="node1", provenance_tier=TrustTier.INTERNAL)
             ],
-            edges=[]
+            edges=[],
         )
         E = energy(plan)
 
@@ -47,17 +43,13 @@ class TestHierarchyEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="list_files",
-                    node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL
+                    tool_name="list_files", node_id="node1", provenance_tier=TrustTier.INTERNAL
                 ),
                 ToolCallNode(
-                    tool_name="read_file",
-                    node_id="node2",
-                    provenance_tier=TrustTier.INTERNAL
-                )
+                    tool_name="read_file", node_id="node2", provenance_tier=TrustTier.INTERNAL
+                ),
             ],
-            edges=[("node1", "node2")]
+            edges=[("node1", "node2")],
         )
 
         E = energy(plan)
@@ -73,10 +65,10 @@ class TestHierarchyEnergy:
                 ToolCallNode(
                     tool_name="if_then_else",  # Control flow tool
                     node_id="node1",
-                    provenance_tier=TrustTier.PUBLIC_WEB  # Untrusted!
+                    provenance_tier=TrustTier.PUBLIC_WEB,  # Untrusted!
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         E = energy(plan)
@@ -91,12 +83,10 @@ class TestHierarchyEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="send_email",
-                    node_id="node1",
-                    provenance_tier=TrustTier.PUBLIC_WEB
+                    tool_name="send_email", node_id="node1", provenance_tier=TrustTier.PUBLIC_WEB
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         z_g = torch.randn(1, 1024, requires_grad=True)
@@ -117,25 +107,21 @@ class TestHierarchyEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="list_users",
-                    node_id="node1",
-                    provenance_tier=TrustTier.INTERNAL
+                    tool_name="list_users", node_id="node1", provenance_tier=TrustTier.INTERNAL
                 ),
                 ToolCallNode(
-                    tool_name="delete_all",
-                    node_id="node2",
-                    provenance_tier=TrustTier.PUBLIC_WEB
-                )
+                    tool_name="delete_all", node_id="node2", provenance_tier=TrustTier.PUBLIC_WEB
+                ),
             ],
-            edges=[]
+            edges=[],
         )
 
         explanation = energy.explain(plan)
 
-        assert 'total_energy' in explanation
-        assert 'node_contributions' in explanation
-        assert 'high_risk_nodes' in explanation
-        assert len(explanation['node_contributions']) == 2
+        assert "total_energy" in explanation
+        assert "node_contributions" in explanation
+        assert "high_risk_nodes" in explanation
+        assert len(explanation["node_contributions"]) == 2
 
     def test_latent_modulation(self):
         """Latent modulation should affect energy magnitude."""
@@ -144,12 +130,10 @@ class TestHierarchyEnergy:
         plan = ExecutionPlan(
             nodes=[
                 ToolCallNode(
-                    tool_name="test_tool",
-                    node_id="node1",
-                    provenance_tier=TrustTier.PUBLIC_WEB
+                    tool_name="test_tool", node_id="node1", provenance_tier=TrustTier.PUBLIC_WEB
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         z_g = torch.randn(1, 1024)
@@ -175,9 +159,7 @@ class TestHierarchyPerformance:
         # Create moderately complex plan
         nodes = [
             ToolCallNode(
-                tool_name=f"tool_{i}",
-                node_id=f"node{i}",
-                provenance_tier=TrustTier(i % 3 + 1)
+                tool_name=f"tool_{i}", node_id=f"node{i}", provenance_tier=TrustTier(i % 3 + 1)
             )
             for i in range(20)
         ]

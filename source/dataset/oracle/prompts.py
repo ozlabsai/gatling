@@ -52,7 +52,7 @@ class OraclePromptBuilder:
 {policy_rules}
 
 **Forbidden Operations:**
-{', '.join(policy.forbidden_operations) if policy.forbidden_operations else 'None'}
+{", ".join(policy.forbidden_operations) if policy.forbidden_operations else "None"}
 
 **Scope Limits:**
 {policy.scope_limits}
@@ -111,7 +111,7 @@ Generate exactly {num_requests} diverse, policy-compliant requests.
                 + "\n".join(
                     [
                         f"  - {p.name} ({p.type}): {p.description}"
-                        + (f" [required]" if p.required else f" [optional, default: {p.default}]")
+                        + (" [required]" if p.required else f" [optional, default: {p.default}]")
                         for p in tool.parameters
                     ]
                 )
@@ -210,7 +210,7 @@ Generate the tool-call graph now.
 **System Policy:**
 {policy_rules}
 
-**Forbidden Operations:** {', '.join(policy.forbidden_operations)}
+**Forbidden Operations:** {", ".join(policy.forbidden_operations)}
 **Scope Limits:** {policy.scope_limits}
 
 **Tool-Call Graph to Validate:**

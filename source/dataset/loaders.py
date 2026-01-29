@@ -28,7 +28,6 @@ from pydantic import BaseModel
 
 from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
 
-
 # Load environment variables
 load_dotenv()
 
@@ -85,11 +84,7 @@ class AgentHarmLoader(DatasetLoader):
         - Paper: "AgentHarm: A Benchmark for Measuring Harmfulness of LLM Agents"
     """
 
-    def __init__(
-        self,
-        cache_dir: str | None = None,
-        include_chat: bool = False
-    ):
+    def __init__(self, cache_dir: str | None = None, include_chat: bool = False):
         """
         Initialize AgentHarm loader.
 
@@ -97,16 +92,14 @@ class AgentHarmLoader(DatasetLoader):
             cache_dir: Directory to cache downloaded dataset
             include_chat: Whether to include chat-only samples (no tool calls)
         """
-        self.cache_dir = cache_dir or os.path.join(os.path.expanduser("~"), ".cache", "gatling", "datasets")
+        self.cache_dir = cache_dir or os.path.join(
+            os.path.expanduser("~"), ".cache", "gatling", "datasets"
+        )
         self.include_chat = include_chat
         self._stats: dict[str, Any] = {}
 
     def _parse_tool_calls(
-        self,
-        target_functions: list[str],
-        prompt: str,
-        config: str,
-        sample_id: str
+        self, target_functions: list[str], prompt: str, config: str, sample_id: str
     ) -> list[ToolCallNode]:
         """
         Parse target functions into ToolCallNode objects.
@@ -143,7 +136,7 @@ class AgentHarmLoader(DatasetLoader):
                 provenance_hash=None,  # No cryptographic hash in dataset
                 scope_volume=scope_volume,
                 scope_sensitivity=scope_sensitivity,
-                node_id=f"{sample_id}_tool_{idx}"
+                node_id=f"{sample_id}_tool_{idx}",
             )
             nodes.append(node)
 
@@ -181,11 +174,20 @@ class AgentHarmLoader(DatasetLoader):
         prompt_lower = prompt.lower()
 
         # Check for high-sensitivity keywords
-        if any(keyword in prompt_lower for keyword in ["password", "credential", "secret", "key", "token"]):
+        if any(
+            keyword in prompt_lower
+            for keyword in ["password", "credential", "secret", "key", "token"]
+        ):
             return 5
-        elif any(keyword in prompt_lower for keyword in ["financial", "payment", "credit card", "bank", "health"]):
+        elif any(
+            keyword in prompt_lower
+            for keyword in ["financial", "payment", "credit card", "bank", "health"]
+        ):
             return 4
-        elif any(keyword in prompt_lower for keyword in ["personal", "private", "email", "phone", "address"]):
+        elif any(
+            keyword in prompt_lower
+            for keyword in ["personal", "private", "email", "phone", "address"]
+        ):
             return 3
         elif config == "harmful":
             return 2  # Harmful scenarios default to higher sensitivity
@@ -224,10 +226,7 @@ class AgentHarmLoader(DatasetLoader):
 
         return arguments
 
-    def _build_execution_plan(
-        self,
-        nodes: list[ToolCallNode]
-    ) -> ExecutionPlan:
+    def _build_execution_plan(self, nodes: list[ToolCallNode]) -> ExecutionPlan:
         """
         Build ExecutionPlan from tool call nodes.
 
@@ -266,10 +265,7 @@ class AgentHarmLoader(DatasetLoader):
             # Load both splits
             for split in ["test_public", "validation"]:
                 ds = load_dataset(
-                    "ai-safety-institute/AgentHarm",
-                    config,
-                    split=split,
-                    cache_dir=self.cache_dir
+                    "ai-safety-institute/AgentHarm", config, split=split, cache_dir=self.cache_dir
                 )
 
                 for sample in ds:
@@ -287,7 +283,7 @@ class AgentHarmLoader(DatasetLoader):
                             target_functions=sample["target_functions"],
                             prompt=sample["prompt"],
                             config=config,
-                            sample_id=sample["id"]
+                            sample_id=sample["id"],
                         )
 
                         # Skip samples with no tool calls
@@ -314,7 +310,7 @@ class AgentHarmLoader(DatasetLoader):
                                 "target_functions": sample["target_functions"],
                                 "detailed_prompt": sample.get("detailed_prompt"),
                                 "hint_included": sample.get("hint_included"),
-                            }
+                            },
                         )
 
                         successful_transforms += 1
@@ -332,7 +328,7 @@ class AgentHarmLoader(DatasetLoader):
             "failed_transforms": failed_transforms,
             "transform_rate": successful_transforms / total_samples if total_samples > 0 else 0,
             "configs_loaded": configs,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     def get_stats(self) -> dict[str, Any]:
@@ -346,8 +342,7 @@ class AgentHarmLoader(DatasetLoader):
 
 
 def load_agent_harm(
-    cache_dir: str | None = None,
-    include_chat: bool = False
+    cache_dir: str | None = None, include_chat: bool = False
 ) -> Iterator[DatasetSample]:
     """
     Convenience function to load AgentHarm dataset.

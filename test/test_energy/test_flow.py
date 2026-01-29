@@ -13,14 +13,14 @@ Tests cover:
 import pytest
 import torch
 
+from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
 from source.energy.flow import (
     FlowEnergy,
     GraphTopologyValidator,
-    TransformationCoherenceValidator,
     ProvenanceFlowValidator,
-    create_flow_energy
+    TransformationCoherenceValidator,
+    create_flow_energy,
 )
-from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
 
 
 class TestGraphTopologyValidator:
@@ -38,7 +38,7 @@ class TestGraphTopologyValidator:
                 provenance_hash="hash1",
                 scope_volume=100,
                 scope_sensitivity=2,
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="process_data",
@@ -47,7 +47,7 @@ class TestGraphTopologyValidator:
                 provenance_hash="hash2",
                 scope_volume=100,
                 scope_sensitivity=2,
-                node_id="n2"
+                node_id="n2",
             ),
             ToolCallNode(
                 tool_name="aggregate",
@@ -56,8 +56,8 @@ class TestGraphTopologyValidator:
                 provenance_hash="hash3",
                 scope_volume=50,
                 scope_sensitivity=2,
-                node_id="n3"
-            )
+                node_id="n3",
+            ),
         ]
 
         # Create cycle: n1 → n2 → n3 → n1
@@ -82,7 +82,7 @@ class TestGraphTopologyValidator:
                 provenance_hash="h1",
                 scope_volume=100,
                 scope_sensitivity=1,
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="display",
@@ -91,8 +91,8 @@ class TestGraphTopologyValidator:
                 provenance_hash="h2",
                 scope_volume=100,
                 scope_sensitivity=1,
-                node_id="n2"
-            )
+                node_id="n2",
+            ),
         ]
 
         edges = [("n1", "n2")]
@@ -114,7 +114,7 @@ class TestGraphTopologyValidator:
                 provenance_hash=f"h{i}",
                 scope_volume=10,
                 scope_sensitivity=1,
-                node_id=f"n{i}"
+                node_id=f"n{i}",
             )
             for i in range(3)
         ]
@@ -137,7 +137,7 @@ class TestGraphTopologyValidator:
                 provenance_hash=f"h{i}",
                 scope_volume=10,
                 scope_sensitivity=1,
-                node_id=f"n{i}"
+                node_id=f"n{i}",
             )
             for i in range(4)
         ]
@@ -161,7 +161,7 @@ class TestGraphTopologyValidator:
                 provenance_hash="h1",
                 scope_volume=10,
                 scope_sensitivity=1,
-                node_id="n1"
+                node_id="n1",
             )
         ]
 
@@ -186,7 +186,7 @@ class TestGraphTopologyValidator:
                 provenance_hash=f"h{i}",
                 scope_volume=10,
                 scope_sensitivity=1,
-                node_id=f"n{i}"
+                node_id=f"n{i}",
             )
             for i in range(3)
         ]
@@ -230,7 +230,7 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h1",
                 scope_volume=100,
                 scope_sensitivity=1,
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="filter_records",  # Reducer
@@ -239,8 +239,8 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h2",
                 scope_volume=200,  # Volume increased (violation!)
                 scope_sensitivity=1,
-                node_id="n2"
-            )
+                node_id="n2",
+            ),
         ]
 
         edges = [("n1", "n2")]
@@ -248,8 +248,8 @@ class TestTransformationCoherenceValidator:
         violations = validator.check_volume_consistency(nodes, edges)
 
         assert len(violations) == 1
-        assert violations[0]['penalty'] == 3.0
-        assert "increased volume" in violations[0]['reason'].lower()
+        assert violations[0]["penalty"] == 3.0
+        assert "increased volume" in violations[0]["reason"].lower()
 
     def test_volume_consistency_neutral_large_expansion(self):
         """Detect when neutral transform greatly expands volume."""
@@ -263,7 +263,7 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h1",
                 scope_volume=10,
                 scope_sensitivity=1,
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="transform_data",  # Neutral
@@ -272,8 +272,8 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h2",
                 scope_volume=100,  # 10x expansion
                 scope_sensitivity=1,
-                node_id="n2"
-            )
+                node_id="n2",
+            ),
         ]
 
         edges = [("n1", "n2")]
@@ -281,7 +281,7 @@ class TestTransformationCoherenceValidator:
         violations = validator.check_volume_consistency(nodes, edges)
 
         assert len(violations) == 1
-        assert violations[0]['penalty'] == 1.5
+        assert violations[0]["penalty"] == 1.5
 
     def test_suspicious_chain_detection(self):
         """Detect suspicious transformation sequences."""
@@ -295,7 +295,7 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h1",
                 scope_volume=10,
                 scope_sensitivity=5,
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="encrypt_data",
@@ -304,7 +304,7 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h2",
                 scope_volume=10,
                 scope_sensitivity=5,
-                node_id="n2"
+                node_id="n2",
             ),
             ToolCallNode(
                 tool_name="compress_file",
@@ -313,7 +313,7 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h3",
                 scope_volume=5,
                 scope_sensitivity=5,
-                node_id="n3"
+                node_id="n3",
             ),
             ToolCallNode(
                 tool_name="send_external",
@@ -322,8 +322,8 @@ class TestTransformationCoherenceValidator:
                 provenance_hash="h4",
                 scope_volume=5,
                 scope_sensitivity=5,
-                node_id="n4"
-            )
+                node_id="n4",
+            ),
         ]
 
         edges = [("n1", "n2"), ("n2", "n3"), ("n3", "n4")]
@@ -331,7 +331,7 @@ class TestTransformationCoherenceValidator:
         chains = validator.detect_suspicious_chains(nodes, edges)
 
         assert len(chains) > 0
-        assert chains[0]['penalty'] == 8.0
+        assert chains[0]["penalty"] == 8.0
 
 
 class TestProvenanceFlowValidator:
@@ -349,7 +349,7 @@ class TestProvenanceFlowValidator:
                 provenance_hash="h1",
                 scope_volume=100,
                 scope_sensitivity=1,
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="admin_action",
@@ -358,8 +358,8 @@ class TestProvenanceFlowValidator:
                 provenance_hash="h2",
                 scope_volume=100,
                 scope_sensitivity=1,
-                node_id="n2"
-            )
+                node_id="n2",
+            ),
         ]
 
         edges = [("n1", "n2")]
@@ -367,9 +367,9 @@ class TestProvenanceFlowValidator:
         violations = validator.track_provenance_degradation(nodes, edges)
 
         assert len(violations) == 1
-        assert violations[0]['penalty'] == 5.0  # Critical
-        assert violations[0]['src_tier'] == 3
-        assert violations[0]['dst_tier'] == 1
+        assert violations[0]["penalty"] == 5.0  # Critical
+        assert violations[0]["src_tier"] == 3
+        assert violations[0]["dst_tier"] == 1
 
     def test_sensitivity_escalation(self):
         """Detect significant sensitivity increases."""
@@ -383,7 +383,7 @@ class TestProvenanceFlowValidator:
                 provenance_hash="h1",
                 scope_volume=10,
                 scope_sensitivity=1,  # Low sensitivity
-                node_id="n1"
+                node_id="n1",
             ),
             ToolCallNode(
                 tool_name="access_secrets",
@@ -392,8 +392,8 @@ class TestProvenanceFlowValidator:
                 provenance_hash="h2",
                 scope_volume=10,
                 scope_sensitivity=5,  # High sensitivity (escalation!)
-                node_id="n2"
-            )
+                node_id="n2",
+            ),
         ]
 
         edges = [("n1", "n2")]
@@ -401,8 +401,8 @@ class TestProvenanceFlowValidator:
         escalations = validator.detect_sensitivity_escalation(nodes, edges)
 
         assert len(escalations) == 1
-        assert escalations[0]['escalation'] == 4
-        assert escalations[0]['penalty'] == 8.0  # 2.0 * 4
+        assert escalations[0]["escalation"] == 4
+        assert escalations[0]["penalty"] == 8.0  # 2.0 * 4
 
 
 class TestFlowEnergy:
@@ -431,7 +431,7 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=100,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 ),
                 ToolCallNode(
                     tool_name="filter_records",
@@ -440,7 +440,7 @@ class TestFlowEnergy:
                     provenance_hash="h2",
                     scope_volume=50,
                     scope_sensitivity=1,
-                    node_id="n2"
+                    node_id="n2",
                 ),
                 ToolCallNode(
                     tool_name="display_to_user",
@@ -449,10 +449,10 @@ class TestFlowEnergy:
                     provenance_hash="h3",
                     scope_volume=50,
                     scope_sensitivity=1,
-                    node_id="n3"
-                )
+                    node_id="n3",
+                ),
             ],
-            edges=[("n1", "n2"), ("n2", "n3")]
+            edges=[("n1", "n2"), ("n2", "n3")],
         )
 
         energy = model(plan)
@@ -472,7 +472,7 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 ),
                 ToolCallNode(
                     tool_name="process",
@@ -481,7 +481,7 @@ class TestFlowEnergy:
                     provenance_hash="h2",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n2"
+                    node_id="n2",
                 ),
                 ToolCallNode(
                     tool_name="loop_back",
@@ -490,10 +490,10 @@ class TestFlowEnergy:
                     provenance_hash="h3",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n3"
-                )
+                    node_id="n3",
+                ),
             ],
-            edges=[("n1", "n2"), ("n2", "n3"), ("n3", "n1")]  # Cycle!
+            edges=[("n1", "n2"), ("n2", "n3"), ("n3", "n1")],  # Cycle!
         )
 
         energy = model(plan)
@@ -514,7 +514,7 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=1000,
                     scope_sensitivity=5,  # High sensitivity
-                    node_id="n1"
+                    node_id="n1",
                 ),
                 ToolCallNode(
                     tool_name="encrypt_data",
@@ -523,7 +523,7 @@ class TestFlowEnergy:
                     provenance_hash="h2",
                     scope_volume=1000,
                     scope_sensitivity=5,
-                    node_id="n2"
+                    node_id="n2",
                 ),
                 ToolCallNode(
                     tool_name="send_to_external_api",  # Exfiltration!
@@ -532,10 +532,10 @@ class TestFlowEnergy:
                     provenance_hash="h3",
                     scope_volume=1000,
                     scope_sensitivity=5,
-                    node_id="n3"
-                )
+                    node_id="n3",
+                ),
             ],
-            edges=[("n1", "n2"), ("n2", "n3")]
+            edges=[("n1", "n2"), ("n2", "n3")],
         )
 
         energy = model(plan)
@@ -556,7 +556,7 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=100,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 ),
                 ToolCallNode(
                     tool_name="admin_delete",  # Tier 1 operation
@@ -565,10 +565,10 @@ class TestFlowEnergy:
                     provenance_hash="h2",
                     scope_volume=100,
                     scope_sensitivity=1,
-                    node_id="n2"
-                )
+                    node_id="n2",
+                ),
             ],
-            edges=[("n1", "n2")]
+            edges=[("n1", "n2")],
         )
 
         energy = model(plan)
@@ -589,7 +589,7 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 ),
                 ToolCallNode(
                     tool_name="display",
@@ -598,31 +598,31 @@ class TestFlowEnergy:
                     provenance_hash="h2",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n2"
-                )
+                    node_id="n2",
+                ),
             ],
-            edges=[("n1", "n2")]
+            edges=[("n1", "n2")],
         )
 
         explanation = model.explain(plan)
 
         # Check all required fields
-        assert 'total_energy' in explanation
-        assert 'component_energies' in explanation
-        assert 'weighted_contributions' in explanation
-        assert 'subweights' in explanation
-        assert 'sink_nodes' in explanation
-        assert 'topology_violations' in explanation
-        assert 'transformation_violations' in explanation
-        assert 'provenance_violations' in explanation
-        assert 'risk_assessment' in explanation
-        assert 'recommendations' in explanation
+        assert "total_energy" in explanation
+        assert "component_energies" in explanation
+        assert "weighted_contributions" in explanation
+        assert "subweights" in explanation
+        assert "sink_nodes" in explanation
+        assert "topology_violations" in explanation
+        assert "transformation_violations" in explanation
+        assert "provenance_violations" in explanation
+        assert "risk_assessment" in explanation
+        assert "recommendations" in explanation
 
         # Check component energies structure
-        assert 'sink_risk' in explanation['component_energies']
-        assert 'topology' in explanation['component_energies']
-        assert 'transformation' in explanation['component_energies']
-        assert 'provenance' in explanation['component_energies']
+        assert "sink_risk" in explanation["component_energies"]
+        assert "topology" in explanation["component_energies"]
+        assert "transformation" in explanation["component_energies"]
+        assert "provenance" in explanation["component_energies"]
 
     def test_explain_risk_assessment_levels(self):
         """Risk assessment correctly categorizes energy levels."""
@@ -638,7 +638,7 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=1,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 ),
                 ToolCallNode(
                     tool_name="display",
@@ -647,14 +647,14 @@ class TestFlowEnergy:
                     provenance_hash="h2",
                     scope_volume=1,
                     scope_sensitivity=1,
-                    node_id="n2"
-                )
+                    node_id="n2",
+                ),
             ],
-            edges=[("n1", "n2")]
+            edges=[("n1", "n2")],
         )
 
         safe_explanation = model.explain(safe_plan)
-        assert safe_explanation['risk_assessment'] in ['safe', 'suspicious', 'critical']
+        assert safe_explanation["risk_assessment"] in ["safe", "suspicious", "critical"]
 
     def test_differentiability_with_latent_modulation(self):
         """Model is differentiable with latent modulation."""
@@ -669,10 +669,10 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         z_g = torch.randn(1, 1024, requires_grad=True)
@@ -710,10 +710,10 @@ class TestFlowEnergy:
                     provenance_hash="h1",
                     scope_volume=10,
                     scope_sensitivity=1,
-                    node_id="n1"
+                    node_id="n1",
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         energy = model(plan)
@@ -727,7 +727,7 @@ class TestFlowEnergyPerformance:
 
     @pytest.mark.skipif(
         True,  # Skip until pytest-benchmark is installed
-        reason="pytest-benchmark not installed"
+        reason="pytest-benchmark not installed",
     )
     def test_forward_latency_small_plan(self):
         """Forward pass latency for small plan (5 nodes)."""
@@ -744,11 +744,11 @@ class TestFlowEnergyPerformance:
                     provenance_hash=f"h{i}",
                     scope_volume=100,
                     scope_sensitivity=2,
-                    node_id=f"n{i}"
+                    node_id=f"n{i}",
                 )
                 for i in range(5)
             ],
-            edges=[("n0", "n1"), ("n1", "n2"), ("n2", "n3"), ("n3", "n4")]
+            edges=[("n0", "n1"), ("n1", "n2"), ("n2", "n3"), ("n3", "n4")],
         )
 
         # Simple timing test
@@ -762,7 +762,7 @@ class TestFlowEnergyPerformance:
 
     @pytest.mark.skipif(
         True,  # Skip until pytest-benchmark is installed
-        reason="pytest-benchmark not installed"
+        reason="pytest-benchmark not installed",
     )
     def test_explain_latency(self):
         """Explain method latency."""
@@ -779,11 +779,11 @@ class TestFlowEnergyPerformance:
                     provenance_hash=f"h{i}",
                     scope_volume=100,
                     scope_sensitivity=2,
-                    node_id=f"n{i}"
+                    node_id=f"n{i}",
                 )
                 for i in range(10)
             ],
-            edges=[(f"n{i}", f"n{i+1}") for i in range(9)]
+            edges=[(f"n{i}", f"n{i + 1}") for i in range(9)],
         )
 
         # Simple timing test

@@ -20,7 +20,6 @@ Training Requirement (from docs):
 """
 
 import re
-from typing import Any
 
 from source.dataset.models import GoldTrace, ScopeMetadata, SensitivityTier
 from source.encoders.intent_predictor import ScopeConstraints
@@ -37,14 +36,19 @@ class ScopeLabeler:
     # Intent keywords that signal small scopes
     # Note: "last" removed from here since "last week/month/quarter" is temporal, not singular
     SINGULAR_KEYWORDS = [
-        "latest", "recent", "newest", "current",
-        "my", "single", "one", "this", "that"
+        "latest",
+        "recent",
+        "newest",
+        "current",
+        "my",
+        "single",
+        "one",
+        "this",
+        "that",
     ]
 
     # Intent keywords that signal larger scopes
-    PLURAL_KEYWORDS = [
-        "all", "list", "search", "find", "every", "each"
-    ]
+    PLURAL_KEYWORDS = ["all", "list", "search", "find", "every", "each"]
 
     # Temporal scope keywords
     TEMPORAL_PATTERNS = {
@@ -68,8 +72,16 @@ class ScopeLabeler:
 
     # Sensitivity keywords
     SENSITIVE_KEYWORDS = [
-        "confidential", "private", "personal", "pii", "ssn",
-        "financial", "payment", "credit card", "salary", "compensation"
+        "confidential",
+        "private",
+        "personal",
+        "pii",
+        "ssn",
+        "financial",
+        "payment",
+        "credit card",
+        "salary",
+        "compensation",
     ]
 
     @classmethod
@@ -102,7 +114,7 @@ class ScopeLabeler:
             limit=limit,
             date_range_days=date_range_days,
             max_depth=max_depth,
-            include_sensitive=include_sensitive
+            include_sensitive=include_sensitive,
         )
 
     @classmethod
@@ -117,7 +129,7 @@ class ScopeLabeler:
             - Falls back to scope.rows_requested if available
         """
         # Check for explicit numbers first (highest priority)
-        numbers = re.findall(r'\b(\d+)\b', query_text)
+        numbers = re.findall(r"\b(\d+)\b", query_text)
         if numbers:
             # Use the first number found, capped at reasonable limit, minimum 1
             return max(1, min(int(numbers[0]), 1000))
@@ -203,8 +215,7 @@ class ScopeLabeler:
 
 
 def convert_scope_metadata_to_constraints(
-    metadata: ScopeMetadata,
-    query_text: str | None = None
+    metadata: ScopeMetadata, query_text: str | None = None
 ) -> ScopeConstraints:
     """
     Direct converter from ScopeMetadata to ScopeConstraints.
@@ -224,7 +235,7 @@ def convert_scope_metadata_to_constraints(
         max_depth=1,  # Conservative default
         include_sensitive=(
             metadata.sensitivity_tier in [SensitivityTier.CONFIDENTIAL, SensitivityTier.RESTRICTED]
-        )
+        ),
     )
 
 
@@ -254,7 +265,7 @@ def label_traces_batch(traces: list[GoldTrace]) -> list[tuple[GoldTrace, ScopeCo
             training_sample = {
                 "query": trace.request.text,
                 "minimal_scope": scope_label.model_dump(),
-                "tool_schema": trace.graph.calls[0].tool_id if trace.graph.calls else None
+                "tool_schema": trace.graph.calls[0].tool_id if trace.graph.calls else None,
             }
         ```
     """

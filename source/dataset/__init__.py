@@ -13,12 +13,12 @@ from source.dataset.loaders import (
     load_agent_harm,
 )
 from source.dataset.models import (
-    ToolCall,
-    ToolCallGraph,
-    UserRequest,
     GoldTrace,
     SystemPolicy,
+    ToolCall,
+    ToolCallGraph,
     ToolSchema,
+    UserRequest,
 )
 
 __all__ = [

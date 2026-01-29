@@ -19,7 +19,6 @@ References:
 - Relational Graph Convolutional Networks: https://arxiv.org/abs/1703.06103
 """
 
-import hashlib
 from enum import IntEnum
 from typing import Any
 
@@ -31,6 +30,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class TrustTier(IntEnum):
     """Trust levels for data provenance (as per Dawn Song's workstream)."""
+
     INTERNAL = 1  # System instructions, internal databases
     SIGNED_PARTNER = 2  # Verified external sources
     PUBLIC_WEB = 3  # Untrusted retrieval (RAG, web scraping)
@@ -38,21 +38,26 @@ class TrustTier(IntEnum):
 
 class ToolCallNode(BaseModel):
     """A single tool invocation in the execution plan graph."""
+
     tool_name: str = Field(..., min_length=1, description="Name of the tool being invoked")
     arguments: dict[str, Any] = Field(default_factory=dict, description="Tool arguments")
 
     # Provenance metadata
-    provenance_tier: TrustTier = Field(default=TrustTier.INTERNAL, description="Trust tier of instruction source")
+    provenance_tier: TrustTier = Field(
+        default=TrustTier.INTERNAL, description="Trust tier of instruction source"
+    )
     provenance_hash: str | None = Field(default=None, description="Cryptographic hash of source")
 
     # Scope metadata
     scope_volume: int = Field(default=1, ge=1, description="Data volume (rows, records, files)")
-    scope_sensitivity: int = Field(default=1, ge=1, le=5, description="Sensitivity level (1=public, 5=critical)")
+    scope_sensitivity: int = Field(
+        default=1, ge=1, le=5, description="Sensitivity level (1=public, 5=critical)"
+    )
 
     # Graph metadata
     node_id: str = Field(..., description="Unique node identifier")
 
-    @field_validator('provenance_tier', mode='before')
+    @field_validator("provenance_tier", mode="before")
     @classmethod
     def parse_trust_tier(cls, v):
         """Parse trust tier from int or TrustTier."""
@@ -63,17 +68,20 @@ class ToolCallNode(BaseModel):
 
 class ExecutionPlan(BaseModel):
     """Complete execution plan represented as a typed tool-call graph."""
-    nodes: list[ToolCallNode] = Field(..., min_length=1, description="Tool invocation nodes")
-    edges: list[tuple[str, str]] = Field(default_factory=list, description="Data flow edges (src_id, dst_id)")
 
-    @field_validator('edges')
+    nodes: list[ToolCallNode] = Field(..., min_length=1, description="Tool invocation nodes")
+    edges: list[tuple[str, str]] = Field(
+        default_factory=list, description="Data flow edges (src_id, dst_id)"
+    )
+
+    @field_validator("edges")
     @classmethod
     def validate_edges(cls, v, info):
         """Ensure edge endpoints reference valid nodes."""
-        if 'nodes' not in info.data:
+        if "nodes" not in info.data:
             return v
 
-        node_ids = {node.node_id for node in info.data['nodes']}
+        node_ids = {node.node_id for node in info.data["nodes"]}
         for src, dst in v:
             if src not in node_ids or dst not in node_ids:
                 raise ValueError(f"Edge ({src}, {dst}) references non-existent node")
@@ -94,7 +102,7 @@ class ProvenanceEmbedding(nn.Module):
         self,
         tier_indices: torch.Tensor,
         scope_volume: torch.Tensor,
-        scope_sensitivity: torch.Tensor
+        scope_sensitivity: torch.Tensor,
     ) -> torch.Tensor:
         """Combine provenance tier and scope metadata."""
         tier_emb = self.tier_embedding(tier_indices)
@@ -115,12 +123,7 @@ class GraphAttention(nn.Module):
     Implements message passing with edge-aware attention.
     """
 
-    def __init__(
-        self,
-        hidden_dim: int,
-        num_heads: int = 8,
-        dropout: float = 0.1
-    ):
+    def __init__(self, hidden_dim: int, num_heads: int = 8, dropout: float = 0.1):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads
@@ -134,13 +137,9 @@ class GraphAttention(nn.Module):
         self.out_proj = nn.Linear(hidden_dim, hidden_dim)
 
         self.dropout = nn.Dropout(dropout)
-        self.scale = self.head_dim ** -0.5
+        self.scale = self.head_dim**-0.5
 
-    def forward(
-        self,
-        x: torch.Tensor,
-        adjacency: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         """
         Apply graph attention.
 
@@ -151,9 +150,21 @@ class GraphAttention(nn.Module):
         """
         batch_size, num_nodes, _ = x.shape
 
-        q = self.q_proj(x).view(batch_size, num_nodes, self.num_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(batch_size, num_nodes, self.num_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).view(batch_size, num_nodes, self.num_heads, self.head_dim).transpose(1, 2)
+        q = (
+            self.q_proj(x)
+            .view(batch_size, num_nodes, self.num_heads, self.head_dim)
+            .transpose(1, 2)
+        )
+        k = (
+            self.k_proj(x)
+            .view(batch_size, num_nodes, self.num_heads, self.head_dim)
+            .transpose(1, 2)
+        )
+        v = (
+            self.v_proj(x)
+            .view(batch_size, num_nodes, self.num_heads, self.head_dim)
+            .transpose(1, 2)
+        )
 
         scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
 
@@ -163,7 +174,7 @@ class GraphAttention(nn.Module):
         eye = torch.eye(num_nodes, device=x.device).unsqueeze(0).unsqueeze(0)
         mask = torch.maximum(mask, eye)  # Add self-loops
 
-        scores = scores.masked_fill(mask == 0, float('-inf'))
+        scores = scores.masked_fill(mask == 0, float("-inf"))
         attn_weights = F.softmax(scores, dim=-1)
         attn_weights = self.dropout(attn_weights)
 
@@ -176,12 +187,7 @@ class GraphAttention(nn.Module):
 class GraphTransformerBlock(nn.Module):
     """Transformer block with graph-aware attention."""
 
-    def __init__(
-        self,
-        hidden_dim: int,
-        num_heads: int,
-        dropout: float = 0.1
-    ):
+    def __init__(self, hidden_dim: int, num_heads: int, dropout: float = 0.1):
         super().__init__()
         self.attention = GraphAttention(hidden_dim, num_heads, dropout)
         self.norm1 = nn.LayerNorm(hidden_dim)
@@ -191,15 +197,11 @@ class GraphTransformerBlock(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim * 4, hidden_dim),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
         self.norm2 = nn.LayerNorm(hidden_dim)
 
-    def forward(
-        self,
-        x: torch.Tensor,
-        adjacency: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         """Apply graph transformer block."""
         x = x + self.attention(self.norm1(x), adjacency)
         x = x + self.ffn(self.norm2(x))
@@ -230,7 +232,7 @@ class ExecutionEncoder(nn.Module):
         num_heads: int = 8,
         max_nodes: int = 64,
         dropout: float = 0.1,
-        vocab_size: int = 10000
+        vocab_size: int = 10000,
     ):
         super().__init__()
 
@@ -246,10 +248,9 @@ class ExecutionEncoder(nn.Module):
         self.provenance_embedding = ProvenanceEmbedding(hidden_dim)
 
         # Graph transformer layers
-        self.layers = nn.ModuleList([
-            GraphTransformerBlock(hidden_dim, num_heads, dropout)
-            for _ in range(num_layers)
-        ])
+        self.layers = nn.ModuleList(
+            [GraphTransformerBlock(hidden_dim, num_heads, dropout) for _ in range(num_layers)]
+        )
 
         # Pooling and projection
         self.attention_pool = nn.Linear(hidden_dim, 1)
@@ -258,7 +259,7 @@ class ExecutionEncoder(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(latent_dim * 2, latent_dim),
-            nn.LayerNorm(latent_dim)
+            nn.LayerNorm(latent_dim),
         )
 
         self.input_norm = nn.LayerNorm(hidden_dim)
@@ -272,10 +273,7 @@ class ExecutionEncoder(nn.Module):
         return hash(text) % 10000
 
     def _create_adjacency_matrix(
-        self,
-        num_nodes: int,
-        edges: list[tuple[int, int]],
-        device: torch.device
+        self, num_nodes: int, edges: list[tuple[int, int]], device: torch.device
     ) -> torch.Tensor:
         """Build adjacency matrix from edge list."""
         adjacency = torch.zeros(num_nodes, num_nodes, device=device)
@@ -284,10 +282,7 @@ class ExecutionEncoder(nn.Module):
                 adjacency[src, dst] = 1
         return adjacency
 
-    def forward(
-        self,
-        plan: ExecutionPlan | dict[str, Any]
-    ) -> torch.Tensor:
+    def forward(self, plan: ExecutionPlan | dict[str, Any]) -> torch.Tensor:
         """
         Encode execution plan into latent vector.
 
@@ -325,19 +320,23 @@ class ExecutionEncoder(nn.Module):
             tool_tokens.extend([0] * (self.max_nodes - len(tool_tokens)))
 
         # Convert to tensors
-        token_ids = torch.tensor(tool_tokens[:self.max_nodes]).unsqueeze(0)
+        token_ids = torch.tensor(tool_tokens[: self.max_nodes]).unsqueeze(0)
         position_ids = torch.arange(self.max_nodes).unsqueeze(0)
 
         # Provenance and scope metadata
-        tier_indices = torch.tensor([node.provenance_tier for node in nodes] + [0] * (self.max_nodes - num_nodes)).unsqueeze(0)
-        scope_volume = torch.tensor([node.scope_volume for node in nodes] + [1] * (self.max_nodes - num_nodes)).unsqueeze(0)
-        scope_sensitivity = torch.tensor([node.scope_sensitivity for node in nodes] + [1] * (self.max_nodes - num_nodes)).unsqueeze(0)
+        tier_indices = torch.tensor(
+            [node.provenance_tier for node in nodes] + [0] * (self.max_nodes - num_nodes)
+        ).unsqueeze(0)
+        scope_volume = torch.tensor(
+            [node.scope_volume for node in nodes] + [1] * (self.max_nodes - num_nodes)
+        ).unsqueeze(0)
+        scope_sensitivity = torch.tensor(
+            [node.scope_sensitivity for node in nodes] + [1] * (self.max_nodes - num_nodes)
+        ).unsqueeze(0)
 
         # Build adjacency matrix
         adjacency = self._create_adjacency_matrix(
-            self.max_nodes,
-            edge_indices,
-            token_ids.device
+            self.max_nodes, edge_indices, token_ids.device
         ).unsqueeze(0)
 
         # Embed tokens
@@ -378,9 +377,7 @@ class ExecutionEncoder(nn.Module):
 
 
 def create_execution_encoder(
-    latent_dim: int = 1024,
-    checkpoint_path: str | None = None,
-    device: str = "cpu"
+    latent_dim: int = 1024, checkpoint_path: str | None = None, device: str = "cpu"
 ) -> ExecutionEncoder:
     """
     Factory function to create ExecutionEncoder.

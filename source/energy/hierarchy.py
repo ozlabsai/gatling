@@ -29,11 +29,12 @@ References:
     - RAG Security Risks: https://arxiv.org/abs/2311.04155
 """
 
-import torch
-import torch.nn as nn
 from typing import Any
 
-from source.encoders.execution_encoder import ExecutionPlan, TrustTier, ToolCallNode
+import torch
+import torch.nn as nn
+
+from source.encoders.execution_encoder import ExecutionPlan
 
 
 class ControlFlowClassifier(nn.Module):
@@ -63,7 +64,7 @@ class ControlFlowClassifier(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(128, 1),
-            nn.Sigmoid()  # [0, 1] probability
+            nn.Sigmoid(),  # [0, 1] probability
         )
 
     def forward(self, tool_token: torch.Tensor) -> torch.Tensor:
@@ -100,7 +101,7 @@ class HierarchyEnergy(nn.Module):
         hidden_dim: int = 256,
         vocab_size: int = 10000,
         use_latent_modulation: bool = True,
-        latent_dim: int = 1024
+        latent_dim: int = 1024,
     ):
         super().__init__()
 
@@ -111,9 +112,7 @@ class HierarchyEnergy(nn.Module):
 
         # Learnable penalty weights (per trust tier)
         # Initialize with reasonable defaults: [0.0, 0.5, 10.0]
-        self.tier_penalties = nn.Parameter(
-            torch.tensor([0.0, 0.5, 10.0], dtype=torch.float32)
-        )
+        self.tier_penalties = nn.Parameter(torch.tensor([0.0, 0.5, 10.0], dtype=torch.float32))
 
         # Optional: Modulate penalties based on governance-execution misalignment
         if use_latent_modulation:
@@ -121,7 +120,7 @@ class HierarchyEnergy(nn.Module):
                 nn.Linear(latent_dim * 2, 256),
                 nn.ReLU(),
                 nn.Linear(256, 1),
-                nn.Softplus()  # Ensures positive multiplier
+                nn.Softplus(),  # Ensures positive multiplier
             )
 
     def _hash_tool_name(self, tool_name: str) -> int:
@@ -132,7 +131,7 @@ class HierarchyEnergy(nn.Module):
         self,
         plan: ExecutionPlan | dict[str, Any],
         z_g: torch.Tensor | None = None,
-        z_e: torch.Tensor | None = None
+        z_e: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Calculate E_hierarchy energy.
@@ -156,18 +155,21 @@ class HierarchyEnergy(nn.Module):
             return torch.tensor([0.0], dtype=torch.float32)
 
         # Tokenize tool names
-        tool_tokens = torch.tensor([
-            self._hash_tool_name(node.tool_name) for node in nodes
-        ], dtype=torch.long)
+        tool_tokens = torch.tensor(
+            [self._hash_tool_name(node.tool_name) for node in nodes], dtype=torch.long
+        )
 
         # Classify control flow probability
         control_flow_probs = self.control_flow_classifier(tool_tokens)  # [N, 1]
 
         # Extract trust tiers
-        trust_tiers = torch.tensor([
-            int(node.provenance_tier) - 1  # Convert to 0-indexed
-            for node in nodes
-        ], dtype=torch.long)
+        trust_tiers = torch.tensor(
+            [
+                int(node.provenance_tier) - 1  # Convert to 0-indexed
+                for node in nodes
+            ],
+            dtype=torch.long,
+        )
 
         # Lookup base penalties
         base_penalties = self.tier_penalties[trust_tiers]  # [N]
@@ -186,10 +188,7 @@ class HierarchyEnergy(nn.Module):
 
         return total_energy.unsqueeze(0)  # [1]
 
-    def explain(
-        self,
-        plan: ExecutionPlan | dict[str, Any]
-    ) -> dict[str, Any]:
+    def explain(self, plan: ExecutionPlan | dict[str, Any]) -> dict[str, Any]:
         """
         Generate human-readable explanation of energy calculation.
 
@@ -215,22 +214,18 @@ class HierarchyEnergy(nn.Module):
         nodes = plan.nodes
 
         if len(nodes) == 0:
-            return {
-                'total_energy': 0.0,
-                'node_contributions': [],
-                'high_risk_nodes': []
-            }
+            return {"total_energy": 0.0, "node_contributions": [], "high_risk_nodes": []}
 
         # Compute contributions
-        tool_tokens = torch.tensor([
-            self._hash_tool_name(node.tool_name) for node in nodes
-        ], dtype=torch.long)
+        tool_tokens = torch.tensor(
+            [self._hash_tool_name(node.tool_name) for node in nodes], dtype=torch.long
+        )
 
         control_flow_probs = self.control_flow_classifier(tool_tokens).squeeze(-1)
 
-        trust_tiers = torch.tensor([
-            int(node.provenance_tier) - 1 for node in nodes
-        ], dtype=torch.long)
+        trust_tiers = torch.tensor(
+            [int(node.provenance_tier) - 1 for node in nodes], dtype=torch.long
+        )
 
         base_penalties = self.tier_penalties[trust_tiers]
         weighted_penalties = base_penalties * control_flow_probs
@@ -243,11 +238,11 @@ class HierarchyEnergy(nn.Module):
             contrib = float(weighted_penalties[i])
 
             node_info = {
-                'node_id': node.node_id,
-                'tool_name': node.tool_name,
-                'trust_tier': int(node.provenance_tier),
-                'control_flow_prob': float(control_flow_probs[i]),
-                'energy_contribution': contrib
+                "node_id": node.node_id,
+                "tool_name": node.tool_name,
+                "trust_tier": int(node.provenance_tier),
+                "control_flow_prob": float(control_flow_probs[i]),
+                "energy_contribution": contrib,
             }
 
             contributions.append(node_info)
@@ -256,16 +251,14 @@ class HierarchyEnergy(nn.Module):
                 high_risk_nodes.append(node.node_id)
 
         return {
-            'total_energy': float(weighted_penalties.sum()),
-            'node_contributions': contributions,
-            'high_risk_nodes': high_risk_nodes
+            "total_energy": float(weighted_penalties.sum()),
+            "node_contributions": contributions,
+            "high_risk_nodes": high_risk_nodes,
         }
 
 
 def create_hierarchy_energy(
-    use_latent_modulation: bool = True,
-    checkpoint_path: str | None = None,
-    device: str = "cpu"
+    use_latent_modulation: bool = True, checkpoint_path: str | None = None, device: str = "cpu"
 ) -> HierarchyEnergy:
     """
     Factory function for E_hierarchy.
@@ -281,9 +274,7 @@ def create_hierarchy_energy(
     model = HierarchyEnergy(use_latent_modulation=use_latent_modulation)
 
     if checkpoint_path is not None:
-        model.load_state_dict(
-            torch.load(checkpoint_path, map_location=device, weights_only=True)
-        )
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
 
     model = model.to(device)
     model.eval()  # Inference mode by default

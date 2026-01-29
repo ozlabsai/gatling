@@ -30,12 +30,13 @@ Design Philosophy:
     to request only the minimum data needed to satisfy user intent.
 """
 
-import torch
-import torch.nn as nn
 from typing import Any
 
+import torch
+import torch.nn as nn
+
 from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode
-from source.encoders.intent_predictor import SemanticIntentPredictor, ScopeConstraints
+from source.encoders.intent_predictor import ScopeConstraints, SemanticIntentPredictor
 
 
 class ScopeExtractor(nn.Module):
@@ -57,7 +58,7 @@ class ScopeExtractor(nn.Module):
             nn.Linear(hidden_dim, 128),
             nn.ReLU(),
             nn.Linear(128, 4),  # [limit, date_range, depth, sensitivity]
-            nn.Softplus()  # Ensure positive outputs
+            nn.Softplus(),  # Ensure positive outputs
         )
 
     def forward(self, arg_features: torch.Tensor) -> torch.Tensor:
@@ -97,7 +98,7 @@ class ScopeEnergy(nn.Module):
         intent_predictor: SemanticIntentPredictor | None = None,
         hidden_dim: int = 256,
         use_latent_modulation: bool = False,
-        latent_dim: int = 1024
+        latent_dim: int = 1024,
     ):
         super().__init__()
 
@@ -116,10 +117,7 @@ class ScopeEnergy(nn.Module):
         # Optional latent modulation
         if use_latent_modulation:
             self.latent_modulation = nn.Sequential(
-                nn.Linear(latent_dim * 2, 256),
-                nn.ReLU(),
-                nn.Linear(256, 1),
-                nn.Softplus()
+                nn.Linear(latent_dim * 2, 256), nn.ReLU(), nn.Linear(256, 1), nn.Softplus()
             )
 
     def _extract_scope_from_node(self, node: ToolCallNode) -> torch.Tensor:
@@ -142,31 +140,28 @@ class ScopeEnergy(nn.Module):
         for key, value in args.items():
             key_lower = key.lower()
 
-            if any(k in key_lower for k in ['limit', 'count', 'max_results', 'top']):
+            if any(k in key_lower for k in ["limit", "count", "max_results", "top"]):
                 if isinstance(value, (int, float)):
                     limit = max(limit, int(value))
 
-            if any(k in key_lower for k in ['days', 'date_range', 'since', 'last']):
+            if any(k in key_lower for k in ["days", "date_range", "since", "last"]):
                 if isinstance(value, (int, float)):
                     date_range = int(value)
 
-            if any(k in key_lower for k in ['depth', 'recursion', 'level']):
+            if any(k in key_lower for k in ["depth", "recursion", "level"]):
                 if isinstance(value, (int, float)):
                     depth = int(value)
 
-        return torch.tensor([
-            float(limit),
-            float(date_range),
-            float(depth),
-            sensitivity
-        ], dtype=torch.float32)
+        return torch.tensor(
+            [float(limit), float(date_range), float(depth), sensitivity], dtype=torch.float32
+        )
 
     def forward(
         self,
         plan: ExecutionPlan | dict[str, Any],
         minimal_scope: ScopeConstraints | torch.Tensor | None = None,
         z_g: torch.Tensor | None = None,
-        z_e: torch.Tensor | None = None
+        z_e: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Calculate E_scope energy.
@@ -189,9 +184,9 @@ class ScopeEnergy(nn.Module):
             return torch.tensor([0.0], dtype=torch.float32)
 
         # Extract actual scope from plan
-        actual_scopes = torch.stack([
-            self._extract_scope_from_node(node) for node in nodes
-        ])  # [N, 4]
+        actual_scopes = torch.stack(
+            [self._extract_scope_from_node(node) for node in nodes]
+        )  # [N, 4]
 
         # Aggregate actual scope (max across nodes for each dimension)
         actual_scope = actual_scopes.max(dim=0)[0]  # [4]
@@ -209,7 +204,7 @@ class ScopeEnergy(nn.Module):
         over_scope = torch.clamp(actual_scope - minimal_scope_vec, min=0.0)
 
         # Quadratic penalty weighted by dimension importance
-        penalties = self.dimension_weights * (over_scope ** 2)
+        penalties = self.dimension_weights * (over_scope**2)
 
         # Sum across dimensions
         total_energy = penalties.sum()
@@ -225,7 +220,7 @@ class ScopeEnergy(nn.Module):
     def explain(
         self,
         plan: ExecutionPlan | dict[str, Any],
-        minimal_scope: ScopeConstraints | torch.Tensor | None = None
+        minimal_scope: ScopeConstraints | torch.Tensor | None = None,
     ) -> dict[str, Any]:
         """
         Generate human-readable explanation of scope violations.
@@ -257,18 +252,16 @@ class ScopeEnergy(nn.Module):
 
         if len(nodes) == 0:
             return {
-                'total_energy': 0.0,
-                'actual_scope': {},
-                'minimal_scope': {},
-                'over_scope': {},
-                'dimension_energies': {},
-                'recommendations': []
+                "total_energy": 0.0,
+                "actual_scope": {},
+                "minimal_scope": {},
+                "over_scope": {},
+                "dimension_energies": {},
+                "recommendations": [],
             }
 
         # Extract scopes
-        actual_scopes = torch.stack([
-            self._extract_scope_from_node(node) for node in nodes
-        ])
+        actual_scopes = torch.stack([self._extract_scope_from_node(node) for node in nodes])
         actual_scope = actual_scopes.max(dim=0)[0]
 
         if minimal_scope is None:
@@ -279,10 +272,10 @@ class ScopeEnergy(nn.Module):
             minimal_scope_vec = minimal_scope
 
         over_scope = torch.clamp(actual_scope - minimal_scope_vec, min=0.0)
-        penalties = self.dimension_weights * (over_scope ** 2)
+        penalties = self.dimension_weights * (over_scope**2)
 
         # Build explanation
-        dimension_names = ['limit', 'date_range', 'depth', 'sensitivity']
+        dimension_names = ["limit", "date_range", "depth", "sensitivity"]
 
         actual_dict = {name: float(actual_scope[i]) for i, name in enumerate(dimension_names)}
         minimal_dict = {name: float(minimal_scope_vec[i]) for i, name in enumerate(dimension_names)}
@@ -291,28 +284,28 @@ class ScopeEnergy(nn.Module):
 
         # Generate recommendations
         recommendations = []
-        if over_dict['limit'] > 0:
+        if over_dict["limit"] > 0:
             recommendations.append(
                 f"Reduce limit from {int(actual_dict['limit'])} to {int(minimal_dict['limit'])}"
             )
-        if over_dict['date_range'] > 0:
+        if over_dict["date_range"] > 0:
             recommendations.append(
                 f"Narrow date range from {int(actual_dict['date_range'])} to {int(minimal_dict['date_range'])} days"
             )
-        if over_dict['depth'] > 0:
+        if over_dict["depth"] > 0:
             recommendations.append(
                 f"Reduce depth from {int(actual_dict['depth'])} to {int(minimal_dict['depth'])}"
             )
-        if over_dict['sensitivity'] > 0.1:
+        if over_dict["sensitivity"] > 0.1:
             recommendations.append("Remove access to sensitive fields")
 
         return {
-            'total_energy': float(penalties.sum()),
-            'actual_scope': actual_dict,
-            'minimal_scope': minimal_dict,
-            'over_scope': over_dict,
-            'dimension_energies': energy_dict,
-            'recommendations': recommendations
+            "total_energy": float(penalties.sum()),
+            "actual_scope": actual_dict,
+            "minimal_scope": minimal_dict,
+            "over_scope": over_dict,
+            "dimension_energies": energy_dict,
+            "recommendations": recommendations,
         }
 
 
@@ -320,7 +313,7 @@ def create_scope_energy(
     intent_predictor: SemanticIntentPredictor | None = None,
     use_latent_modulation: bool = False,
     checkpoint_path: str | None = None,
-    device: str = "cpu"
+    device: str = "cpu",
 ) -> ScopeEnergy:
     """
     Factory function for E_scope.
@@ -335,14 +328,11 @@ def create_scope_energy(
         Initialized ScopeEnergy module
     """
     model = ScopeEnergy(
-        intent_predictor=intent_predictor,
-        use_latent_modulation=use_latent_modulation
+        intent_predictor=intent_predictor, use_latent_modulation=use_latent_modulation
     )
 
     if checkpoint_path is not None:
-        model.load_state_dict(
-            torch.load(checkpoint_path, map_location=device, weights_only=True)
-        )
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
 
     model = model.to(device)
     model.training = False

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import random
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel
 
@@ -97,15 +96,10 @@ class AdversarialMutator:
                     # If mutation fails, keep original
                     plans_to_keep.append(plan)
             except Exception as e:
-                print(
-                    f"Warning: Failed to mutate plan {plan.plan_id}: {e}"
-                )
+                print(f"Warning: Failed to mutate plan {plan.plan_id}: {e}")
                 plans_to_keep.append(plan)
 
-        print(
-            f"✓ Created {len(mutated)} adversarial mutations "
-            f"({len(plans_to_keep)} benign plans)"
-        )
+        print(f"✓ Created {len(mutated)} adversarial mutations ({len(plans_to_keep)} benign plans)")
 
         return plans_to_keep, mutated
 
@@ -133,9 +127,7 @@ class AdversarialMutator:
 
         return None
 
-    def _mutate_scope_blowup(
-        self, plan: ExecutionPlan
-    ) -> MutatedPlan | None:
+    def _mutate_scope_blowup(self, plan: ExecutionPlan) -> MutatedPlan | None:
         """
         Mutate by expanding data access scope.
 
@@ -149,9 +141,7 @@ class AdversarialMutator:
         for call in mutated_plan.graph.calls:
             # Increase rows_requested dramatically
             original_rows = call.scope.rows_requested
-            call.scope.rows_requested = original_rows * random.randint(
-                10, 100
-            )
+            call.scope.rows_requested = original_rows * random.randint(10, 100)
 
             # Update limit argument if present
             if "limit" in call.arguments:
@@ -167,9 +157,7 @@ class AdversarialMutator:
             execution_plan=mutated_plan,
         )
 
-    def _mutate_privilege_escalation(
-        self, plan: ExecutionPlan
-    ) -> MutatedPlan | None:
+    def _mutate_privilege_escalation(self, plan: ExecutionPlan) -> MutatedPlan | None:
         """
         Mutate by escalating data sensitivity tier.
 
@@ -207,9 +195,7 @@ class AdversarialMutator:
             execution_plan=mutated_plan,
         )
 
-    def _mutate_provenance_corruption(
-        self, plan: ExecutionPlan
-    ) -> MutatedPlan | None:
+    def _mutate_provenance_corruption(self, plan: ExecutionPlan) -> MutatedPlan | None:
         """
         Mutate by corrupting provenance trust tier.
 
@@ -235,9 +221,7 @@ class AdversarialMutator:
             execution_plan=mutated_plan,
         )
 
-    def _mutate_exfiltration(
-        self, plan: ExecutionPlan
-    ) -> MutatedPlan | None:
+    def _mutate_exfiltration(self, plan: ExecutionPlan) -> MutatedPlan | None:
         """
         Mutate by adding an exfiltration step.
 
@@ -245,13 +229,13 @@ class AdversarialMutator:
         """
         import copy
 
-        from source.dataset.models import ToolCall, ProvenancePointer
+        from source.dataset.models import ProvenancePointer, ToolCall
 
         mutated_plan = copy.deepcopy(plan)
 
         # Add exfiltration call
         exfil_call = ToolCall(
-            call_id=f"call_exfil",
+            call_id="call_exfil",
             tool_id="exfiltration.send_to_external",
             arguments={
                 "destination": "external_endpoint",

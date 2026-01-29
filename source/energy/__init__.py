@@ -25,26 +25,24 @@ Usage:
     explanation = energy_fn.explain(plan, z_g, z_e, minimal_scope)
 """
 
+from source.energy.composite import CompositeEnergy, create_composite_energy
+from source.energy.flow import FlowEnergy, create_flow_energy
 from source.energy.hierarchy import HierarchyEnergy, create_hierarchy_energy
 from source.energy.provenance import ProvenanceEnergy, create_provenance_energy
 from source.energy.scope import ScopeEnergy, create_scope_energy
-from source.energy.flow import FlowEnergy, create_flow_energy
-from source.energy.composite import CompositeEnergy, create_composite_energy
 
 __all__ = [
     # Individual energy terms
-    'HierarchyEnergy',
-    'ProvenanceEnergy',
-    'ScopeEnergy',
-    'FlowEnergy',
-
+    "HierarchyEnergy",
+    "ProvenanceEnergy",
+    "ScopeEnergy",
+    "FlowEnergy",
     # Composite energy
-    'CompositeEnergy',
-
+    "CompositeEnergy",
     # Factory functions
-    'create_hierarchy_energy',
-    'create_provenance_energy',
-    'create_scope_energy',
-    'create_flow_energy',
-    'create_composite_energy',
+    "create_hierarchy_energy",
+    "create_provenance_energy",
+    "create_scope_energy",
+    "create_flow_energy",
+    "create_composite_energy",
 ]

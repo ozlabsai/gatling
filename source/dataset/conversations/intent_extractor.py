@@ -23,9 +23,7 @@ class ActionIntent(BaseModel):
     user_message: str
     intent_category: str  # e.g., "retrieve", "create", "update", "delete", "analyze"
     action_description: str  # Natural language description of the action
-    inferred_tools: list[str] = Field(
-        default_factory=list
-    )  # Potential tool categories
+    inferred_tools: list[str] = Field(default_factory=list)  # Potential tool categories
     scope_hints: dict[str, Any] = Field(
         default_factory=dict
     )  # Data scope hints (e.g., limit, filters)
@@ -100,9 +98,7 @@ class IntentExtractor:
         print(f"✓ Extracted intents from {len(results)} conversations")
         return results
 
-    def _extract_from_conversation(
-        self, conversation: Conversation
-    ) -> list[ActionIntent]:
+    def _extract_from_conversation(self, conversation: Conversation) -> list[ActionIntent]:
         """
         Extract intents from a single conversation.
 
@@ -125,15 +121,11 @@ class IntentExtractor:
             )
 
             # Parse response
-            intents = self._parse_extraction_response(
-                response.content[0].text, conversation
-            )
+            intents = self._parse_extraction_response(response.content[0].text, conversation)
             return intents
 
         except Exception as e:
-            print(
-                f"Warning: Failed to extract intents from {conversation.conversation_id}: {e}"
-            )
+            print(f"Warning: Failed to extract intents from {conversation.conversation_id}: {e}")
             return []
 
     def _format_conversation(self, conversation: Conversation) -> str:
@@ -194,9 +186,7 @@ Return an empty array [] if no actionable intents are found.
 
         try:
             # Extract JSON from response (handle markdown code blocks)
-            json_match = re.search(
-                r"```json\n(.*?)\n```", response_text, re.DOTALL
-            )
+            json_match = re.search(r"```json\n(.*?)\n```", response_text, re.DOTALL)
             if json_match:
                 json_text = json_match.group(1)
             else:

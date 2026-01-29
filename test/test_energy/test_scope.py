@@ -46,10 +46,7 @@ class TestScopeEnergy:
         assert isinstance(energy, ScopeEnergy)
         assert energy.dimension_weights.shape == (4,)
         # Weights should be: [1.0, 0.5, 0.3, 2.0] for [limit, date, depth, sensitivity]
-        assert torch.allclose(
-            energy.dimension_weights,
-            torch.tensor([1.0, 0.5, 0.3, 2.0])
-        )
+        assert torch.allclose(energy.dimension_weights, torch.tensor([1.0, 0.5, 0.3, 2.0]))
         assert energy.scope_extractor is not None
 
     def test_minimal_plan(self):
@@ -64,10 +61,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
-                    arguments={}
+                    arguments={},
                 )
             ],
-            edges=[]
+            edges=[],
         )
         E = energy(plan)
 
@@ -87,10 +84,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1},
                     scope_volume=1,
-                    scope_sensitivity=1  # Min valid value
+                    scope_sensitivity=1,  # Min valid value
                 )
             ],
-            edges=[]
+            edges=[],
         )
         minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
         E = energy(plan, minimal_scope=minimal_scope)
@@ -112,10 +109,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
-                    arguments={}
+                    arguments={},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(limit=1, include_sensitive=False)
@@ -136,10 +133,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=10000,
                     scope_sensitivity=3,
-                    arguments={"limit": 10000}
+                    arguments={"limit": 10000},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Define minimal scope - user only needs 1 invoice
@@ -147,7 +144,7 @@ class TestScopeEnergy:
             limit=1,  # User only needs 1 invoice
             date_range_days=1,
             max_depth=1,
-            include_sensitive=False
+            include_sensitive=False,
         )
 
         E = energy(plan, minimal_scope)
@@ -167,17 +164,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 1000},
                     scope_volume=1000,
-                    scope_sensitivity=1
+                    scope_sensitivity=1,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=1,
-            date_range_days=1,
-            max_depth=1,
-            include_sensitive=False
+            limit=1, date_range_days=1, max_depth=1, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope=minimal_scope)
@@ -198,10 +192,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=100,
                     scope_sensitivity=2,
-                    arguments={"days": 365}  # One year
+                    arguments={"days": 365},  # One year
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Minimal scope for "latest invoice" is just 1
@@ -209,7 +203,7 @@ class TestScopeEnergy:
             limit=100,
             date_range_days=7,  # One week
             max_depth=1,
-            include_sensitive=False
+            include_sensitive=False,
         )
 
         E = energy(plan, minimal_scope)
@@ -229,18 +223,15 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 10, "days": 365},
                     scope_volume=10,
-                    scope_sensitivity=1
+                    scope_sensitivity=1,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Minimal: recent transactions = 7 days
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
+            limit=10, date_range_days=7, max_depth=1, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope=minimal_scope)
@@ -260,18 +251,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=50,
                     scope_sensitivity=1,
-                    arguments={"depth": 10}
+                    arguments={"depth": 10},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Minimal: only need shallow traversal
-        minimal_scope = ScopeConstraints(
-            limit=50,
-            max_depth=2,
-            include_sensitive=False
-        )
+        minimal_scope = ScopeConstraints(limit=50, max_depth=2, include_sensitive=False)
 
         E = energy(plan, minimal_scope)
         # Over-scope on depth = 8 (10-2), weight = 0.3
@@ -290,10 +277,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=5,  # Accessing PII/financial data
-                    arguments={"include_pii": True}
+                    arguments={"include_pii": True},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Minimal: no sensitive data needed
@@ -301,7 +288,7 @@ class TestScopeEnergy:
             limit=1,
             date_range_days=1,
             max_depth=1,
-            include_sensitive=False  # 0.0
+            include_sensitive=False,  # 0.0
         )
 
         E = energy(plan, minimal_scope)
@@ -321,17 +308,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     arguments={"limit": 100, "days": 90, "depth": 3},
                     scope_volume=100,
-                    scope_sensitivity=1
+                    scope_sensitivity=1,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
+            limit=10, date_range_days=7, max_depth=1, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope)
@@ -357,7 +341,7 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=100,
                     scope_sensitivity=2,
-                    arguments={"limit": 100}
+                    arguments={"limit": 100},
                 ),
                 ToolCallNode(
                     tool_name="query_api",
@@ -365,17 +349,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=500,  # Higher scope
                     scope_sensitivity=3,
-                    arguments={"limit": 500}
-                )
+                    arguments={"limit": 500},
+                ),
             ],
-            edges=[("node1", "node2")]
+            edges=[("node1", "node2")],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
+            limit=10, date_range_days=7, max_depth=1, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope)
@@ -400,7 +381,7 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=100,
                     scope_sensitivity=2,
-                    arguments={"limit": 100}
+                    arguments={"limit": 100},
                 ),
                 ToolCallNode(
                     tool_name="query_api",
@@ -408,17 +389,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=500,  # Higher scope
                     scope_sensitivity=3,
-                    arguments={"limit": 500}
-                )
+                    arguments={"limit": 500},
+                ),
             ],
-            edges=[("node1", "node2")]
+            edges=[("node1", "node2")],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
+            limit=10, date_range_days=7, max_depth=1, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope=minimal_scope)
@@ -438,17 +416,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=5,
                     scope_sensitivity=1,
-                    arguments={"limit": 5, "days": 7}
+                    arguments={"limit": 5, "days": 7},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=5,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
+            limit=5, date_range_days=7, max_depth=1, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope=minimal_scope)
@@ -470,17 +445,14 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
-                    arguments={"limit": 1}
+                    arguments={"limit": 1},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=2,
-            include_sensitive=False
+            limit=10, date_range_days=7, max_depth=2, include_sensitive=False
         )
 
         E = energy(plan, minimal_scope=minimal_scope)
@@ -502,10 +474,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1000,
                     scope_sensitivity=3,
-                    arguments={"limit": 1000}
+                    arguments={"limit": 1000},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
@@ -533,10 +505,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1000,
                     scope_sensitivity=2,
-                    arguments={"limit": 1000}
+                    arguments={"limit": 1000},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
@@ -565,37 +537,34 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=5000,
                     scope_sensitivity=4,
-                    arguments={"limit": 5000, "days": 365, "depth": 5}
+                    arguments={"limit": 5000, "days": 365, "depth": 5},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=7,
-            max_depth=1,
-            include_sensitive=False
+            limit=10, date_range_days=7, max_depth=1, include_sensitive=False
         )
 
         explanation = energy.explain(plan, minimal_scope=minimal_scope)
 
-        assert 'total_energy' in explanation
-        assert 'actual_scope' in explanation
-        assert 'minimal_scope' in explanation
-        assert 'over_scope' in explanation
-        assert 'dimension_energies' in explanation
-        assert 'recommendations' in explanation
+        assert "total_energy" in explanation
+        assert "actual_scope" in explanation
+        assert "minimal_scope" in explanation
+        assert "over_scope" in explanation
+        assert "dimension_energies" in explanation
+        assert "recommendations" in explanation
 
         # Check dimension breakdown
-        assert 'limit' in explanation['actual_scope']
-        assert 'date_range' in explanation['actual_scope']
-        assert 'depth' in explanation['actual_scope']
-        assert 'sensitivity' in explanation['actual_scope']
+        assert "limit" in explanation["actual_scope"]
+        assert "date_range" in explanation["actual_scope"]
+        assert "depth" in explanation["actual_scope"]
+        assert "sensitivity" in explanation["actual_scope"]
 
         # Should have recommendations for over-scoped dimensions
-        assert len(explanation['recommendations']) > 0
-        assert any('limit' in rec.lower() for rec in explanation['recommendations'])
+        assert len(explanation["recommendations"]) > 0
+        assert any("limit" in rec.lower() for rec in explanation["recommendations"])
 
     def test_no_penalty_for_under_scope(self):
         """Using less scope than needed should not be penalized."""
@@ -609,17 +578,14 @@ class TestScopeEnergy:
                     arguments={"limit": 5},
                     scope_volume=5,
                     scope_sensitivity=1,
-                    provenance_tier=TrustTier.INTERNAL
+                    provenance_tier=TrustTier.INTERNAL,
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=100,
-            date_range_days=365,
-            max_depth=10,
-            include_sensitive=True
+            limit=100, date_range_days=365, max_depth=10, include_sensitive=True
         )
 
         E = energy(plan, minimal_scope=minimal_scope)
@@ -650,18 +616,15 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=5,
                     scope_sensitivity=1,
-                    arguments={"limit": 5}
+                    arguments={"limit": 5},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Minimal scope allows up to 100 - agent only uses 5
         minimal_scope = ScopeConstraints(
-            limit=100,
-            date_range_days=365,
-            max_depth=10,
-            include_sensitive=True
+            limit=100, date_range_days=365, max_depth=10, include_sensitive=True
         )
 
         E = energy(plan, minimal_scope)
@@ -680,10 +643,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1,
                     scope_sensitivity=1,
-                    arguments={}
+                    arguments={},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
@@ -706,10 +669,10 @@ class TestScopeEnergy:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=100,
                     scope_sensitivity=2,
-                    arguments={"limit": 100}
+                    arguments={"limit": 100},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         # Call without minimal_scope
@@ -737,7 +700,7 @@ class TestScopePerformance:
                 provenance_tier=TrustTier.INTERNAL,
                 scope_volume=max(1, i * 10),  # Ensure >= 1
                 scope_sensitivity=i % 5 + 1,
-                arguments={"limit": max(1, i * 10), "days": max(1, i * 2)}
+                arguments={"limit": max(1, i * 10), "days": max(1, i * 2)},
             )
             for i in range(20)
         ]
@@ -773,11 +736,11 @@ class TestScopePerformance:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=100,
                     scope_sensitivity=2,
-                    arguments={"limit": 100}
+                    arguments={"limit": 100},
                 )
                 for i in range(100)
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(limit=10, include_sensitive=False)
@@ -806,17 +769,14 @@ class TestRealWorldScenarios:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=10000,
                     scope_sensitivity=4,  # Financial data
-                    arguments={"limit": 10000, "include_pii": True}
+                    arguments={"limit": 10000, "include_pii": True},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=1,
-            date_range_days=1,
-            max_depth=1,
-            include_sensitive=False
+            limit=1, date_range_days=1, max_depth=1, include_sensitive=False
         )
 
         E = energy(malicious_plan, minimal_scope=minimal_scope)
@@ -824,7 +784,7 @@ class TestRealWorldScenarios:
 
         # Should detect massive over-scoping
         assert float(E) > 50.0, "Invoice over-retrieval should spike energy"
-        assert 'limit' in str(explanation['recommendations'])
+        assert "limit" in str(explanation["recommendations"])
 
     def test_directory_traversal_depth(self):
         """Detect excessive directory traversal depth."""
@@ -841,16 +801,16 @@ class TestRealWorldScenarios:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=10000,
                     scope_sensitivity=3,
-                    arguments={"depth": 999, "recursive": True}
+                    arguments={"depth": 999, "recursive": True},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
             limit=50,
             max_depth=1,  # Only current directory
-            include_sensitive=False
+            include_sensitive=False,
         )
 
         E = energy(malicious_plan, minimal_scope=minimal_scope)
@@ -869,17 +829,17 @@ class TestRealWorldScenarios:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=1000,
                     scope_sensitivity=3,
-                    arguments={"days": 365}
+                    arguments={"days": 365},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
             limit=1000,
             date_range_days=7,  # One week
             max_depth=1,
-            include_sensitive=False
+            include_sensitive=False,
         )
 
         E = energy(malicious_plan, minimal_scope=minimal_scope)
@@ -901,17 +861,14 @@ class TestRealWorldScenarios:
                     provenance_tier=TrustTier.INTERNAL,
                     scope_volume=10,
                     scope_sensitivity=2,
-                    arguments={"limit": 10, "days": 30}
+                    arguments={"limit": 10, "days": 30},
                 )
             ],
-            edges=[]
+            edges=[],
         )
 
         minimal_scope = ScopeConstraints(
-            limit=10,
-            date_range_days=30,
-            max_depth=1,
-            include_sensitive=False
+            limit=10, date_range_days=30, max_depth=1, include_sensitive=False
         )
 
         E = energy(benign_plan, minimal_scope=minimal_scope)

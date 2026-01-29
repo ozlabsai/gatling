@@ -16,7 +16,6 @@ from pydantic import BaseModel
 from source.dataset.conversations.intent_extractor import ActionIntent
 from source.dataset.conversations.sampler import Conversation
 from source.dataset.models import (
-    GoldTrace,
     ProvenancePointer,
     ScopeMetadata,
     SensitivityTier,
@@ -100,9 +99,7 @@ class PlanTransformer:
                     if plan:
                         plans.append(plan)
                 except Exception as e:
-                    print(
-                        f"Warning: Failed to transform intent from {conv.conversation_id}: {e}"
-                    )
+                    print(f"Warning: Failed to transform intent from {conv.conversation_id}: {e}")
                     continue
 
         print(f"✓ Transformed {len(plans)} intents into execution plans")
@@ -225,7 +222,7 @@ class PlanTransformer:
 
         # Create a simple tool call
         call = ToolCall(
-            call_id=f"call_1",
+            call_id="call_1",
             tool_id=f"{domain.lower()}.{tool.tool_id}",
             arguments=self._infer_arguments(intent, tool),
             scope=ScopeMetadata(
@@ -270,9 +267,7 @@ class PlanTransformer:
         # Fallback to first tool
         return tools[0] if tools else None
 
-    def _infer_arguments(
-        self, intent: ActionIntent, tool: Any
-    ) -> dict[str, Any]:
+    def _infer_arguments(self, intent: ActionIntent, tool: Any) -> dict[str, Any]:
         """
         Infer tool arguments from intent.
 

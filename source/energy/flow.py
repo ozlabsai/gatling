@@ -45,12 +45,13 @@ Design Philosophy:
 Version: 0.1.0 (MVP with heuristic transformation validation)
 """
 
+from collections import defaultdict, deque
+from typing import Any
+
 import torch
 import torch.nn as nn
-from typing import Any
-from collections import defaultdict, deque
 
-from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
+from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode
 
 
 class GraphTopologyValidator(nn.Module):
@@ -70,7 +71,9 @@ class GraphTopologyValidator(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def detect_cycles(self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]) -> tuple[bool, list[list[str]]]:
+    def detect_cycles(
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
+    ) -> tuple[bool, list[list[str]]]:
         """
         Detect cycles using DFS-based algorithm.
 
@@ -149,7 +152,9 @@ class GraphTopologyValidator(nn.Module):
 
         return components
 
-    def validate_edge_references(self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    def validate_edge_references(
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
+    ) -> list[tuple[str, str]]:
         """
         Find edges referencing non-existent nodes.
 
@@ -186,11 +191,7 @@ class GraphTopologyValidator(nn.Module):
         num_components = self.check_connectivity(nodes, edges)
         invalid_edges = self.validate_edge_references(nodes, edges)
 
-        energy = (
-            10.0 * num_cycles +
-            2.0 * max(0, num_components - 1) +
-            5.0 * len(invalid_edges)
-        )
+        energy = 10.0 * num_cycles + 2.0 * max(0, num_components - 1) + 5.0 * len(invalid_edges)
 
         return torch.tensor([energy], dtype=torch.float32)
 
@@ -219,18 +220,33 @@ class TransformationCoherenceValidator(nn.Module):
 
         # Transformation patterns (lowercase)
         self.reducer_patterns = [
-            'filter', 'aggregate', 'sample', 'deduplicate', 'distinct',
-            'limit', 'top', 'head', 'tail', 'summarize', 'group'
+            "filter",
+            "aggregate",
+            "sample",
+            "deduplicate",
+            "distinct",
+            "limit",
+            "top",
+            "head",
+            "tail",
+            "summarize",
+            "group",
         ]
 
         self.expander_patterns = [
-            'expand', 'join', 'cross', 'cartesian', 'explode', 'unnest', 'flatten'
+            "expand",
+            "join",
+            "cross",
+            "cartesian",
+            "explode",
+            "unnest",
+            "flatten",
         ]
 
         self.suspicious_chain_patterns = [
-            ['encrypt', 'compress', 'send'],
-            ['obfuscate', 'encode', 'upload'],
-            ['split', 'fragment', 'external']
+            ["encrypt", "compress", "send"],
+            ["obfuscate", "encode", "upload"],
+            ["split", "fragment", "external"],
         ]
 
     def classify_transformation(self, tool_name: str) -> str:
@@ -244,16 +260,14 @@ class TransformationCoherenceValidator(nn.Module):
 
         # Check expanders first (more specific patterns)
         if any(pattern in tool_lower for pattern in self.expander_patterns):
-            return 'expander'
+            return "expander"
         elif any(pattern in tool_lower for pattern in self.reducer_patterns):
-            return 'reducer'
+            return "reducer"
         else:
-            return 'neutral'
+            return "neutral"
 
     def check_volume_consistency(
-        self,
-        nodes: list[ToolCallNode],
-        edges: list[tuple[str, str]]
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
     ) -> list[dict[str, Any]]:
         """
         Detect volume inconsistencies along data flow edges.
@@ -278,27 +292,29 @@ class TransformationCoherenceValidator(nn.Module):
             transform_type = self.classify_transformation(dst_node.tool_name)
 
             # Check consistency
-            if transform_type == 'reducer' and dst_volume > src_volume:
-                violations.append({
-                    'src': src_id,
-                    'dst': dst_id,
-                    'reason': f"Reducer '{dst_node.tool_name}' increased volume {src_volume} → {dst_volume}",
-                    'penalty': 3.0
-                })
-            elif transform_type == 'neutral' and dst_volume > src_volume * 1.5:
-                violations.append({
-                    'src': src_id,
-                    'dst': dst_id,
-                    'reason': f"Neutral transform '{dst_node.tool_name}' expanded volume {src_volume} → {dst_volume}",
-                    'penalty': 1.5
-                })
+            if transform_type == "reducer" and dst_volume > src_volume:
+                violations.append(
+                    {
+                        "src": src_id,
+                        "dst": dst_id,
+                        "reason": f"Reducer '{dst_node.tool_name}' increased volume {src_volume} → {dst_volume}",
+                        "penalty": 3.0,
+                    }
+                )
+            elif transform_type == "neutral" and dst_volume > src_volume * 1.5:
+                violations.append(
+                    {
+                        "src": src_id,
+                        "dst": dst_id,
+                        "reason": f"Neutral transform '{dst_node.tool_name}' expanded volume {src_volume} → {dst_volume}",
+                        "penalty": 1.5,
+                    }
+                )
 
         return violations
 
     def detect_suspicious_chains(
-        self,
-        nodes: list[ToolCallNode],
-        edges: list[tuple[str, str]]
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
     ) -> list[dict[str, Any]]:
         """
         Detect suspicious transformation sequences.
@@ -324,16 +340,14 @@ class TransformationCoherenceValidator(nn.Module):
             for pattern in self.suspicious_chain_patterns:
                 if len(tool_sequence) >= len(pattern):
                     # Check if last N tools match pattern
-                    recent_tools = tool_sequence[-len(pattern):]
+                    recent_tools = tool_sequence[-len(pattern) :]
                     if all(
                         any(p in tool.lower() for p in [pattern_item])
                         for tool, pattern_item in zip(recent_tools, pattern)
                     ):
-                        suspicious_chains.append({
-                            'path': path.copy(),
-                            'pattern': ' → '.join(pattern),
-                            'penalty': 8.0
-                        })
+                        suspicious_chains.append(
+                            {"path": path.copy(), "pattern": " → ".join(pattern), "penalty": 8.0}
+                        )
 
             # Continue DFS
             for neighbor in graph[node_id]:
@@ -365,8 +379,8 @@ class TransformationCoherenceValidator(nn.Module):
         volume_violations = self.check_volume_consistency(nodes, edges)
         suspicious_chains = self.detect_suspicious_chains(nodes, edges)
 
-        energy = sum(v['penalty'] for v in volume_violations)
-        energy += sum(c['penalty'] for c in suspicious_chains)
+        energy = sum(v["penalty"] for v in volume_violations)
+        energy += sum(c["penalty"] for c in suspicious_chains)
 
         return torch.tensor([energy], dtype=torch.float32)
 
@@ -389,16 +403,17 @@ class ProvenanceFlowValidator(nn.Module):
         # Tier mixing penalties: [safe, moderate, critical]
         # (Tier 1 → Tier 1) = 0.0 (safe)
         # (Tier 3 → Tier 1) = 5.0 (critical: untrusted data in trusted context)
-        self.tier_gap_penalties = torch.tensor([
-            [0.0, 0.5, 1.0],   # Tier 1 source → [1, 2, 3] sinks
-            [0.5, 0.0, 0.5],   # Tier 2 source → [1, 2, 3] sinks
-            [5.0, 2.0, 0.0]    # Tier 3 source → [1, 2, 3] sinks (DANGEROUS)
-        ], dtype=torch.float32)
+        self.tier_gap_penalties = torch.tensor(
+            [
+                [0.0, 0.5, 1.0],  # Tier 1 source → [1, 2, 3] sinks
+                [0.5, 0.0, 0.5],  # Tier 2 source → [1, 2, 3] sinks
+                [5.0, 2.0, 0.0],  # Tier 3 source → [1, 2, 3] sinks (DANGEROUS)
+            ],
+            dtype=torch.float32,
+        )
 
     def track_provenance_degradation(
-        self,
-        nodes: list[ToolCallNode],
-        edges: list[tuple[str, str]]
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
     ) -> list[dict[str, Any]]:
         """
         Track trust tier degradation along edges.
@@ -422,20 +437,20 @@ class ProvenanceFlowValidator(nn.Module):
             penalty = float(self.tier_gap_penalties[src_tier, dst_tier])
 
             if penalty > 0.5:  # Only record significant violations
-                violations.append({
-                    'src': src_id,
-                    'dst': dst_id,
-                    'src_tier': src_tier + 1,
-                    'dst_tier': dst_tier + 1,
-                    'penalty': penalty
-                })
+                violations.append(
+                    {
+                        "src": src_id,
+                        "dst": dst_id,
+                        "src_tier": src_tier + 1,
+                        "dst_tier": dst_tier + 1,
+                        "penalty": penalty,
+                    }
+                )
 
         return violations
 
     def detect_sensitivity_escalation(
-        self,
-        nodes: list[ToolCallNode],
-        edges: list[tuple[str, str]]
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
     ) -> list[dict[str, Any]]:
         """
         Detect sensitivity level increases through flow.
@@ -456,14 +471,16 @@ class ProvenanceFlowValidator(nn.Module):
             sensitivity_increase = dst_node.scope_sensitivity - src_node.scope_sensitivity
 
             if sensitivity_increase > 2:  # Significant escalation
-                escalations.append({
-                    'src': src_id,
-                    'dst': dst_id,
-                    'src_sensitivity': src_node.scope_sensitivity,
-                    'dst_sensitivity': dst_node.scope_sensitivity,
-                    'escalation': sensitivity_increase,
-                    'penalty': 2.0 * sensitivity_increase
-                })
+                escalations.append(
+                    {
+                        "src": src_id,
+                        "dst": dst_id,
+                        "src_sensitivity": src_node.scope_sensitivity,
+                        "dst_sensitivity": dst_node.scope_sensitivity,
+                        "escalation": sensitivity_increase,
+                        "penalty": 2.0 * sensitivity_increase,
+                    }
+                )
 
         return escalations
 
@@ -483,8 +500,8 @@ class ProvenanceFlowValidator(nn.Module):
         tier_violations = self.track_provenance_degradation(nodes, edges)
         sensitivity_escalations = self.detect_sensitivity_escalation(nodes, edges)
 
-        energy = sum(v['penalty'] for v in tier_violations)
-        energy += sum(e['penalty'] for e in sensitivity_escalations)
+        energy = sum(v["penalty"] for v in tier_violations)
+        energy += sum(e["penalty"] for e in sensitivity_escalations)
 
         return torch.tensor([energy], dtype=torch.float32)
 
@@ -514,7 +531,7 @@ class DestinationClassifier(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(128, 1),
-            nn.Sigmoid()  # [0, 1] risk score
+            nn.Sigmoid(),  # [0, 1] risk score
         )
 
     def forward(self, tool_token: torch.Tensor) -> torch.Tensor:
@@ -571,7 +588,7 @@ class FlowEnergy(nn.Module):
         vocab_size: int = 10000,
         use_latent_modulation: bool = True,
         latent_dim: int = 1024,
-        learnable_subweights: bool = True
+        learnable_subweights: bool = True,
     ):
         super().__init__()
 
@@ -593,22 +610,16 @@ class FlowEnergy(nn.Module):
         # Initialize: [sink=2.0, topo=3.0, transform=1.5, prov=2.5]
         # Topology weighted highest (structural integrity critical)
         if learnable_subweights:
-            self.subweights = nn.Parameter(
-                torch.tensor([2.0, 3.0, 1.5, 2.5], dtype=torch.float32)
-            )
+            self.subweights = nn.Parameter(torch.tensor([2.0, 3.0, 1.5, 2.5], dtype=torch.float32))
         else:
             self.register_buffer(
-                'subweights',
-                torch.tensor([2.0, 3.0, 1.5, 2.5], dtype=torch.float32)
+                "subweights", torch.tensor([2.0, 3.0, 1.5, 2.5], dtype=torch.float32)
             )
 
         # Optional latent modulation
         if use_latent_modulation:
             self.latent_modulation = nn.Sequential(
-                nn.Linear(latent_dim * 2, 256),
-                nn.ReLU(),
-                nn.Linear(256, 1),
-                nn.Softplus()
+                nn.Linear(latent_dim * 2, 256), nn.ReLU(), nn.Linear(256, 1), nn.Softplus()
             )
 
     def _hash_tool_name(self, tool_name: str) -> int:
@@ -618,8 +629,14 @@ class FlowEnergy(nn.Module):
     def _is_transform_suspicious(self, tool_name: str) -> bool:
         """Detect suspicious data transformations."""
         suspicious_patterns = [
-            'encrypt', 'compress', 'encode', 'obfuscate',
-            'split', 'chunk', 'fragment', 'base64'
+            "encrypt",
+            "compress",
+            "encode",
+            "obfuscate",
+            "split",
+            "chunk",
+            "fragment",
+            "base64",
         ]
         tool_lower = tool_name.lower()
         return any(pattern in tool_lower for pattern in suspicious_patterns)
@@ -628,7 +645,7 @@ class FlowEnergy(nn.Module):
         self,
         plan: ExecutionPlan | dict[str, Any],
         z_g: torch.Tensor | None = None,
-        z_e: torch.Tensor | None = None
+        z_e: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Calculate E_flow energy with all validation components.
@@ -665,10 +682,10 @@ class FlowEnergy(nn.Module):
         # Weighted composition
         w_sink, w_topo, w_transform, w_prov = self.subweights
         total_energy = (
-            w_sink * E_sink.squeeze() +
-            w_topo * E_topo.squeeze() +
-            w_transform * E_transform.squeeze() +
-            w_prov * E_prov.squeeze()
+            w_sink * E_sink.squeeze()
+            + w_topo * E_topo.squeeze()
+            + w_transform * E_transform.squeeze()
+            + w_prov * E_prov.squeeze()
         )
 
         # Optional latent modulation
@@ -680,9 +697,7 @@ class FlowEnergy(nn.Module):
         return total_energy.unsqueeze(0)
 
     def _compute_sink_risk_energy(
-        self,
-        nodes: list[ToolCallNode],
-        edges: list[tuple[str, str]]
+        self, nodes: list[ToolCallNode], edges: list[tuple[str, str]]
     ) -> torch.Tensor:
         """
         Calculate sink node exfiltration risk energy (original E_flow logic).
@@ -705,21 +720,24 @@ class FlowEnergy(nn.Module):
             return torch.tensor([1.0], dtype=torch.float32)
 
         # Tokenize sink node tools
-        sink_tokens = torch.tensor([
-            self._hash_tool_name(node.tool_name) for node in sink_nodes
-        ], dtype=torch.long)
+        sink_tokens = torch.tensor(
+            [self._hash_tool_name(node.tool_name) for node in sink_nodes], dtype=torch.long
+        )
 
         # Classify destination risk
         dest_risks = self.destination_classifier(sink_tokens).squeeze(-1)  # [K]
 
         # Extract data sensitivity and volume
-        sensitivities = torch.tensor([
-            float(node.scope_sensitivity) for node in sink_nodes
-        ], dtype=torch.long).clamp(1, 5) - 1  # Convert to 0-indexed
+        sensitivities = (
+            torch.tensor(
+                [float(node.scope_sensitivity) for node in sink_nodes], dtype=torch.long
+            ).clamp(1, 5)
+            - 1
+        )  # Convert to 0-indexed
 
-        volumes = torch.tensor([
-            float(node.scope_volume) for node in sink_nodes
-        ], dtype=torch.float32)
+        volumes = torch.tensor(
+            [float(node.scope_volume) for node in sink_nodes], dtype=torch.float32
+        )
 
         # Lookup sensitivity weights
         sensitivity_multipliers = self.sensitivity_weights[sensitivities]  # [K]
@@ -729,10 +747,10 @@ class FlowEnergy(nn.Module):
         sink_energies = dest_risks * sensitivity_multipliers * log_volumes
 
         # Add penalty for suspicious transformations
-        transform_penalties = torch.tensor([
-            5.0 if self._is_transform_suspicious(node.tool_name) else 0.0
-            for node in sink_nodes
-        ], dtype=torch.float32)
+        transform_penalties = torch.tensor(
+            [5.0 if self._is_transform_suspicious(node.tool_name) else 0.0 for node in sink_nodes],
+            dtype=torch.float32,
+        )
 
         sink_energies = sink_energies + transform_penalties
 
@@ -741,10 +759,7 @@ class FlowEnergy(nn.Module):
 
         return total_energy.unsqueeze(0)
 
-    def explain(
-        self,
-        plan: ExecutionPlan | dict[str, Any]
-    ) -> dict[str, Any]:
+    def explain(self, plan: ExecutionPlan | dict[str, Any]) -> dict[str, Any]:
         """
         Generate comprehensive explanation of data flow violations.
 
@@ -802,16 +817,16 @@ class FlowEnergy(nn.Module):
 
         if len(nodes) == 0:
             return {
-                'total_energy': 0.0,
-                'component_energies': {},
-                'weighted_contributions': {},
-                'sink_nodes': [],
-                'high_risk_sinks': [],
-                'topology_violations': {},
-                'transformation_violations': {},
-                'provenance_violations': {},
-                'risk_assessment': 'safe',
-                'recommendations': []
+                "total_energy": 0.0,
+                "component_energies": {},
+                "weighted_contributions": {},
+                "sink_nodes": [],
+                "high_risk_sinks": [],
+                "topology_violations": {},
+                "transformation_violations": {},
+                "provenance_violations": {},
+                "risk_assessment": "safe",
+                "recommendations": [],
             }
 
         # Compute all component energies
@@ -841,40 +856,46 @@ class FlowEnergy(nn.Module):
         high_risk_sinks = []
 
         if len(sink_nodes) > 0:
-            sink_tokens = torch.tensor([
-                self._hash_tool_name(node.tool_name) for node in sink_nodes
-            ], dtype=torch.long)
+            sink_tokens = torch.tensor(
+                [self._hash_tool_name(node.tool_name) for node in sink_nodes], dtype=torch.long
+            )
 
             dest_risks = self.destination_classifier(sink_tokens).squeeze(-1)
-            sensitivities = torch.tensor([
-                float(node.scope_sensitivity) for node in sink_nodes
-            ], dtype=torch.long).clamp(1, 5) - 1
+            sensitivities = (
+                torch.tensor(
+                    [float(node.scope_sensitivity) for node in sink_nodes], dtype=torch.long
+                ).clamp(1, 5)
+                - 1
+            )
 
-            volumes = torch.tensor([
-                float(node.scope_volume) for node in sink_nodes
-            ], dtype=torch.float32)
+            volumes = torch.tensor(
+                [float(node.scope_volume) for node in sink_nodes], dtype=torch.float32
+            )
 
             sensitivity_multipliers = self.sensitivity_weights[sensitivities]
             log_volumes = torch.log1p(volumes)
             sink_energies = dest_risks * sensitivity_multipliers * log_volumes
 
-            transform_penalties = torch.tensor([
-                5.0 if self._is_transform_suspicious(node.tool_name) else 0.0
-                for node in sink_nodes
-            ], dtype=torch.float32)
+            transform_penalties = torch.tensor(
+                [
+                    5.0 if self._is_transform_suspicious(node.tool_name) else 0.0
+                    for node in sink_nodes
+                ],
+                dtype=torch.float32,
+            )
 
             final_energies = sink_energies + transform_penalties
 
             for i, node in enumerate(sink_nodes):
                 energy = float(final_energies[i].detach())
                 info = {
-                    'node_id': node.node_id,
-                    'tool_name': node.tool_name,
-                    'destination_risk': float(dest_risks[i].detach()),
-                    'data_sensitivity': int(node.scope_sensitivity),
-                    'data_volume': int(node.scope_volume),
-                    'is_suspicious_transform': self._is_transform_suspicious(node.tool_name),
-                    'energy_contribution': energy
+                    "node_id": node.node_id,
+                    "tool_name": node.tool_name,
+                    "destination_risk": float(dest_risks[i].detach()),
+                    "data_sensitivity": int(node.scope_sensitivity),
+                    "data_volume": int(node.scope_volume),
+                    "is_suspicious_transform": self._is_transform_suspicious(node.tool_name),
+                    "energy_contribution": energy,
                 }
                 sink_info.append(info)
                 if energy > 5.0:
@@ -886,10 +907,10 @@ class FlowEnergy(nn.Module):
         invalid_edges = self.topology_validator.validate_edge_references(nodes, edges)
 
         topology_violations = {
-            'has_cycles': has_cycles,
-            'cycle_paths': cycle_paths,
-            'num_components': num_components,
-            'invalid_edges': invalid_edges
+            "has_cycles": has_cycles,
+            "cycle_paths": cycle_paths,
+            "num_components": num_components,
+            "invalid_edges": invalid_edges,
         }
 
         # === Transformation Details ===
@@ -897,78 +918,94 @@ class FlowEnergy(nn.Module):
         suspicious_chains = self.transformation_validator.detect_suspicious_chains(nodes, edges)
 
         transformation_violations = {
-            'volume_inconsistencies': volume_violations,
-            'suspicious_chains': suspicious_chains
+            "volume_inconsistencies": volume_violations,
+            "suspicious_chains": suspicious_chains,
         }
 
         # === Provenance Details ===
         tier_violations = self.provenance_validator.track_provenance_degradation(nodes, edges)
-        sensitivity_escalations = self.provenance_validator.detect_sensitivity_escalation(nodes, edges)
+        sensitivity_escalations = self.provenance_validator.detect_sensitivity_escalation(
+            nodes, edges
+        )
 
         provenance_violations = {
-            'tier_mismatches': tier_violations,
-            'sensitivity_escalations': sensitivity_escalations
+            "tier_mismatches": tier_violations,
+            "sensitivity_escalations": sensitivity_escalations,
         }
 
         # === Risk Assessment ===
         if total_energy > 20.0:
-            risk_assessment = 'critical'
+            risk_assessment = "critical"
         elif total_energy > 8.0:
-            risk_assessment = 'suspicious'
+            risk_assessment = "suspicious"
         else:
-            risk_assessment = 'safe'
+            risk_assessment = "safe"
 
         # === Recommendations ===
         recommendations = []
 
         if has_cycles:
-            recommendations.append(f"CRITICAL: Execution plan contains {len(cycle_paths)} circular dependencies. Remove cycles to prevent infinite loops.")
+            recommendations.append(
+                f"CRITICAL: Execution plan contains {len(cycle_paths)} circular dependencies. Remove cycles to prevent infinite loops."
+            )
 
         if len(invalid_edges) > 0:
-            recommendations.append(f"ERROR: {len(invalid_edges)} edges reference non-existent nodes. Fix graph construction.")
+            recommendations.append(
+                f"ERROR: {len(invalid_edges)} edges reference non-existent nodes. Fix graph construction."
+            )
 
         if num_components > 1:
-            recommendations.append(f"WARNING: Execution plan has {num_components} disconnected components. Verify plan completeness.")
+            recommendations.append(
+                f"WARNING: Execution plan has {num_components} disconnected components. Verify plan completeness."
+            )
 
         if len(high_risk_sinks) > 0:
-            recommendations.append(f"SECURITY: {len(high_risk_sinks)} sink nodes pose exfiltration risk. Review external destinations.")
+            recommendations.append(
+                f"SECURITY: {len(high_risk_sinks)} sink nodes pose exfiltration risk. Review external destinations."
+            )
 
         if len(suspicious_chains) > 0:
-            recommendations.append(f"SECURITY: {len(suspicious_chains)} suspicious transformation chains detected (e.g., encrypt→compress→send).")
+            recommendations.append(
+                f"SECURITY: {len(suspicious_chains)} suspicious transformation chains detected (e.g., encrypt→compress→send)."
+            )
 
         if len(tier_violations) > 0:
-            high_tier_violations = [v for v in tier_violations if v['penalty'] >= 5.0]
+            high_tier_violations = [v for v in tier_violations if v["penalty"] >= 5.0]
             if high_tier_violations:
-                recommendations.append(f"SECURITY: {len(high_tier_violations)} critical trust tier violations (Tier 3 → Tier 1 flows).")
+                recommendations.append(
+                    f"SECURITY: {len(high_tier_violations)} critical trust tier violations (Tier 3 → Tier 1 flows)."
+                )
 
         if len(volume_violations) > 0:
-            recommendations.append(f"WARNING: {len(volume_violations)} data volume inconsistencies detected. Verify transformation logic.")
+            recommendations.append(
+                f"WARNING: {len(volume_violations)} data volume inconsistencies detected. Verify transformation logic."
+            )
 
         if not recommendations:
             recommendations.append("Plan passes all data flow consistency checks.")
 
         return {
-            'total_energy': total_energy,
-            'component_energies': {
-                'sink_risk': E_sink,
-                'topology': E_topo,
-                'transformation': E_transform,
-                'provenance': E_prov
+            "total_energy": total_energy,
+            "component_energies": {
+                "sink_risk": E_sink,
+                "topology": E_topo,
+                "transformation": E_transform,
+                "provenance": E_prov,
             },
-            'weighted_contributions': {
-                'sink_risk': weighted_sink,
-                'topology': weighted_topo,
-                'transformation': weighted_transform,
-                'provenance': weighted_prov
+            "weighted_contributions": {
+                "sink_risk": weighted_sink,
+                "topology": weighted_topo,
+                "transformation": weighted_transform,
+                "provenance": weighted_prov,
             },
-            'subweights': [w_sink, w_topo, w_transform, w_prov],
-            'sink_nodes': sink_info,
-            'high_risk_sinks': high_risk_sinks,
-            'topology_violations': topology_violations,
-            'transformation_violations': transformation_violations,
-            'provenance_violations': provenance_violations,
-            'risk_assessment': risk_assessment,
-            'recommendations': recommendations
+            "subweights": [w_sink, w_topo, w_transform, w_prov],
+            "sink_nodes": sink_info,
+            "high_risk_sinks": high_risk_sinks,
+            "topology_violations": topology_violations,
+            "transformation_violations": transformation_violations,
+            "provenance_violations": provenance_violations,
+            "risk_assessment": risk_assessment,
+            "recommendations": recommendations,
         }
 
 
@@ -976,7 +1013,7 @@ def create_flow_energy(
     use_latent_modulation: bool = True,
     learnable_subweights: bool = True,
     checkpoint_path: str | None = None,
-    device: str = "cpu"
+    device: str = "cpu",
 ) -> FlowEnergy:
     """
     Factory function for E_flow with data flow consistency validation.
@@ -996,14 +1033,11 @@ def create_flow_energy(
         >>> explanation = flow_energy.explain(plan)
     """
     model = FlowEnergy(
-        use_latent_modulation=use_latent_modulation,
-        learnable_subweights=learnable_subweights
+        use_latent_modulation=use_latent_modulation, learnable_subweights=learnable_subweights
     )
 
     if checkpoint_path is not None:
-        model.load_state_dict(
-            torch.load(checkpoint_path, map_location=device, weights_only=True)
-        )
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
 
     model = model.to(device)
     model.training = False

@@ -28,16 +28,17 @@ Performance Target:
     - Modular: Can enable/disable individual terms for ablation studies
 """
 
+from typing import Any
+
 import torch
 import torch.nn as nn
-from typing import Any
 
 from source.encoders.execution_encoder import ExecutionPlan
 from source.encoders.intent_predictor import ScopeConstraints
+from source.energy.flow import FlowEnergy
 from source.energy.hierarchy import HierarchyEnergy
 from source.energy.provenance import ProvenanceEnergy
 from source.energy.scope import ScopeEnergy
-from source.energy.flow import FlowEnergy
 
 
 class CompositeEnergy(nn.Module):
@@ -64,7 +65,7 @@ class CompositeEnergy(nn.Module):
         scope_energy: ScopeEnergy,
         flow_energy: FlowEnergy,
         learnable_weights: bool = False,
-        initial_weights: tuple[float, float, float, float] | None = None
+        initial_weights: tuple[float, float, float, float] | None = None,
     ):
         super().__init__()
 
@@ -80,29 +81,19 @@ class CompositeEnergy(nn.Module):
             initial_weights = (1.0, 2.0, 0.5, 1.5)  # (h, p, s, f)
 
         if learnable_weights:
-            self.weights = nn.Parameter(
-                torch.tensor(initial_weights, dtype=torch.float32)
-            )
+            self.weights = nn.Parameter(torch.tensor(initial_weights, dtype=torch.float32))
         else:
-            self.register_buffer(
-                'weights',
-                torch.tensor(initial_weights, dtype=torch.float32)
-            )
+            self.register_buffer("weights", torch.tensor(initial_weights, dtype=torch.float32))
 
         # Term enable flags (for ablation studies)
-        self.term_enabled = {
-            'hierarchy': True,
-            'provenance': True,
-            'scope': True,
-            'flow': True
-        }
+        self.term_enabled = {"hierarchy": True, "provenance": True, "scope": True, "flow": True}
 
     def forward(
         self,
         plan: ExecutionPlan | dict[str, Any],
         z_g: torch.Tensor | None = None,
         z_e: torch.Tensor | None = None,
-        minimal_scope: ScopeConstraints | torch.Tensor | None = None
+        minimal_scope: ScopeConstraints | torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Calculate total energy E(z_g, z_e, plan).
@@ -119,28 +110,28 @@ class CompositeEnergy(nn.Module):
         energies = []
 
         # E_hierarchy
-        if self.term_enabled['hierarchy']:
+        if self.term_enabled["hierarchy"]:
             e_h = self.hierarchy(plan, z_g, z_e)
             energies.append(self.weights[0] * e_h)
         else:
             energies.append(torch.tensor([0.0]))
 
         # E_provenance
-        if self.term_enabled['provenance']:
+        if self.term_enabled["provenance"]:
             e_p = self.provenance(plan, z_g, z_e)
             energies.append(self.weights[1] * e_p)
         else:
             energies.append(torch.tensor([0.0]))
 
         # E_scope
-        if self.term_enabled['scope']:
+        if self.term_enabled["scope"]:
             e_s = self.scope(plan, minimal_scope, z_g, z_e)
             energies.append(self.weights[2] * e_s)
         else:
             energies.append(torch.tensor([0.0]))
 
         # E_flow
-        if self.term_enabled['flow']:
+        if self.term_enabled["flow"]:
             e_f = self.flow(plan, z_g, z_e)
             energies.append(self.weights[3] * e_f)
         else:
@@ -156,7 +147,7 @@ class CompositeEnergy(nn.Module):
         plan: ExecutionPlan | dict[str, Any],
         z_g: torch.Tensor | None = None,
         z_e: torch.Tensor | None = None,
-        minimal_scope: ScopeConstraints | torch.Tensor | None = None
+        minimal_scope: ScopeConstraints | torch.Tensor | None = None,
     ) -> dict[str, Any]:
         """
         Generate comprehensive energy breakdown with explanations.
@@ -188,74 +179,62 @@ class CompositeEnergy(nn.Module):
         e_s = float(self.scope(plan, minimal_scope, z_g, z_e))
         e_f = float(self.flow(plan, z_g, z_e))
 
-        term_energies = {
-            'hierarchy': e_h,
-            'provenance': e_p,
-            'scope': e_s,
-            'flow': e_f
-        }
+        term_energies = {"hierarchy": e_h, "provenance": e_p, "scope": e_s, "flow": e_f}
 
         # Apply weights
         weights_dict = {
-            'hierarchy': float(self.weights[0]),
-            'provenance': float(self.weights[1]),
-            'scope': float(self.weights[2]),
-            'flow': float(self.weights[3])
+            "hierarchy": float(self.weights[0]),
+            "provenance": float(self.weights[1]),
+            "scope": float(self.weights[2]),
+            "flow": float(self.weights[3]),
         }
 
         weighted_contributions = {
-            term: term_energies[term] * weights_dict[term]
-            for term in term_energies
+            term: term_energies[term] * weights_dict[term] for term in term_energies
         }
 
         total_energy = sum(weighted_contributions.values())
 
         # Get detailed explanations from each term
         detailed_explanations = {
-            'hierarchy': self.hierarchy.explain(plan),
-            'provenance': self.provenance.explain(plan),
-            'scope': self.scope.explain(plan, minimal_scope),
-            'flow': self.flow.explain(plan)
+            "hierarchy": self.hierarchy.explain(plan),
+            "provenance": self.provenance.explain(plan),
+            "scope": self.scope.explain(plan, minimal_scope),
+            "flow": self.flow.explain(plan),
         }
 
         # Risk assessment based on total energy
         if total_energy < 1.0:
-            risk_level = 'safe'
+            risk_level = "safe"
         elif total_energy < 10.0:
-            risk_level = 'suspicious'
+            risk_level = "suspicious"
         else:
-            risk_level = 'critical'
+            risk_level = "critical"
 
         # Aggregate recommendations
         recommendations = []
 
         if e_h > 1.0:
-            recommendations.append(
-                "RAG-injection risk detected: Review untrusted data sources"
-            )
+            recommendations.append("RAG-injection risk detected: Review untrusted data sources")
 
         if e_p > 5.0:
-            recommendations.append(
-                "High-privilege tools invoked from low-trust sources"
-            )
+            recommendations.append("High-privilege tools invoked from low-trust sources")
 
         if e_s > 2.0:
-            scope_explain = detailed_explanations['scope']
-            recommendations.extend(scope_explain.get('recommendations', []))
+            scope_explain = detailed_explanations["scope"]
+            recommendations.extend(scope_explain.get("recommendations", []))
 
         if e_f > 3.0:
-            recommendations.append(
-                "Suspicious data flow to external destinations detected"
-            )
+            recommendations.append("Suspicious data flow to external destinations detected")
 
         return {
-            'total_energy': total_energy,
-            'term_energies': term_energies,
-            'weighted_contributions': weighted_contributions,
-            'term_weights': weights_dict,
-            'detailed_explanations': detailed_explanations,
-            'risk_assessment': risk_level,
-            'recommended_actions': recommendations
+            "total_energy": total_energy,
+            "term_energies": term_energies,
+            "weighted_contributions": weighted_contributions,
+            "term_weights": weights_dict,
+            "detailed_explanations": detailed_explanations,
+            "risk_assessment": risk_level,
+            "recommended_actions": recommendations,
         }
 
     def enable_term(self, term: str):
@@ -273,7 +252,7 @@ def create_composite_energy(
     use_latent_modulation: bool = True,
     learnable_weights: bool = False,
     checkpoint_path: str | None = None,
-    device: str = "cpu"
+    device: str = "cpu",
 ) -> CompositeEnergy:
     """
     Factory function for creating the full Gatling energy function.
@@ -287,31 +266,21 @@ def create_composite_energy(
     Returns:
         Initialized CompositeEnergy module
     """
+    from source.energy.flow import create_flow_energy
     from source.energy.hierarchy import create_hierarchy_energy
     from source.energy.provenance import create_provenance_energy
     from source.energy.scope import create_scope_energy
-    from source.energy.flow import create_flow_energy
 
     # Create individual energy terms
-    hierarchy = create_hierarchy_energy(
-        use_latent_modulation=use_latent_modulation,
-        device=device
-    )
+    hierarchy = create_hierarchy_energy(use_latent_modulation=use_latent_modulation, device=device)
 
     provenance = create_provenance_energy(
-        use_latent_modulation=use_latent_modulation,
-        device=device
+        use_latent_modulation=use_latent_modulation, device=device
     )
 
-    scope = create_scope_energy(
-        use_latent_modulation=use_latent_modulation,
-        device=device
-    )
+    scope = create_scope_energy(use_latent_modulation=use_latent_modulation, device=device)
 
-    flow = create_flow_energy(
-        use_latent_modulation=use_latent_modulation,
-        device=device
-    )
+    flow = create_flow_energy(use_latent_modulation=use_latent_modulation, device=device)
 
     # Compose into full energy function
     composite = CompositeEnergy(
@@ -319,7 +288,7 @@ def create_composite_energy(
         provenance_energy=provenance,
         scope_energy=scope,
         flow_energy=flow,
-        learnable_weights=learnable_weights
+        learnable_weights=learnable_weights,
     )
 
     if checkpoint_path is not None:

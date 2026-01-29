@@ -5,18 +5,15 @@ Validates the ScopeLabeler's ability to convert gold traces
 into training-ready ScopeConstraints for E_scope term.
 """
 
-import pytest
 
 from source.dataset.models import (
     GoldTrace,
     ScopeMetadata,
     SensitivityTier,
     SystemPolicy,
-    ToolCall,
     ToolCallGraph,
     TrustTier,
     UserRequest,
-    ProvenancePointer,
 )
 from source.dataset.scope_labeler import (
     ScopeLabeler,
@@ -31,10 +28,7 @@ class TestScopeLabeler:
 
     def test_singular_intent_small_limit(self):
         """Singular keywords should produce limit=1."""
-        trace = self._create_test_trace(
-            query="Show me my latest invoice",
-            rows_requested=None
-        )
+        trace = self._create_test_trace(query="Show me my latest invoice", rows_requested=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -42,10 +36,7 @@ class TestScopeLabeler:
 
     def test_plural_intent_larger_limit(self):
         """Plural keywords should produce reasonable batch limit."""
-        trace = self._create_test_trace(
-            query="List all failed payments",
-            rows_requested=50
-        )
+        trace = self._create_test_trace(query="List all failed payments", rows_requested=50)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -53,10 +44,7 @@ class TestScopeLabeler:
 
     def test_explicit_number_in_query(self):
         """Explicit numbers in query should be used."""
-        trace = self._create_test_trace(
-            query="Show me 5 recent orders",
-            rows_requested=None
-        )
+        trace = self._create_test_trace(query="Show me 5 recent orders", rows_requested=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -64,10 +52,7 @@ class TestScopeLabeler:
 
     def test_temporal_today(self):
         """'today' keyword should map to 1 day."""
-        trace = self._create_test_trace(
-            query="Show invoices from today",
-            time_range_days=None
-        )
+        trace = self._create_test_trace(query="Show invoices from today", time_range_days=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -75,10 +60,7 @@ class TestScopeLabeler:
 
     def test_temporal_last_month(self):
         """'last month' should map to 30 days."""
-        trace = self._create_test_trace(
-            query="Find payments from last month",
-            time_range_days=None
-        )
+        trace = self._create_test_trace(query="Find payments from last month", time_range_days=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -86,10 +68,7 @@ class TestScopeLabeler:
 
     def test_temporal_last_quarter(self):
         """'last quarter' should map to 90 days."""
-        trace = self._create_test_trace(
-            query="Show revenue for last quarter",
-            time_range_days=None
-        )
+        trace = self._create_test_trace(query="Show revenue for last quarter", time_range_days=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -98,8 +77,7 @@ class TestScopeLabeler:
     def test_depth_shallow_default(self):
         """Most queries should default to shallow depth."""
         trace = self._create_test_trace(
-            query="List files in current directory",
-            rows_requested=None
+            query="List files in current directory", rows_requested=None
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -108,10 +86,7 @@ class TestScopeLabeler:
 
     def test_depth_recursive_keyword(self):
         """'recursive' keyword should increase depth."""
-        trace = self._create_test_trace(
-            query="Find all files recursively",
-            rows_requested=None
-        )
+        trace = self._create_test_trace(query="Find all files recursively", rows_requested=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -120,8 +95,7 @@ class TestScopeLabeler:
     def test_sensitivity_keyword_detection(self):
         """Sensitive keywords should set include_sensitive=True."""
         trace = self._create_test_trace(
-            query="Show my private financial records",
-            sensitivity_tier=SensitivityTier.INTERNAL
+            query="Show my private financial records", sensitivity_tier=SensitivityTier.INTERNAL
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -131,8 +105,7 @@ class TestScopeLabeler:
     def test_sensitivity_tier_detection(self):
         """High sensitivity tier should set include_sensitive=True."""
         trace = self._create_test_trace(
-            query="List recent transactions",
-            sensitivity_tier=SensitivityTier.CONFIDENTIAL
+            query="List recent transactions", sensitivity_tier=SensitivityTier.CONFIDENTIAL
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -142,8 +115,7 @@ class TestScopeLabeler:
     def test_default_no_sensitivity(self):
         """Default should be False (least privilege)."""
         trace = self._create_test_trace(
-            query="List recent orders",
-            sensitivity_tier=SensitivityTier.INTERNAL
+            query="List recent orders", sensitivity_tier=SensitivityTier.INTERNAL
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -156,7 +128,7 @@ class TestScopeLabeler:
             query="Process the request",
             rows_requested=None,
             time_range_days=None,
-            sensitivity_tier=SensitivityTier.INTERNAL
+            sensitivity_tier=SensitivityTier.INTERNAL,
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -168,10 +140,7 @@ class TestScopeLabeler:
 
     def test_scope_constraints_output_format(self):
         """Output should be valid ScopeConstraints."""
-        trace = self._create_test_trace(
-            query="Show me 3 items from last week",
-            rows_requested=None
-        )
+        trace = self._create_test_trace(query="Show me 3 items from last week", rows_requested=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -186,13 +155,13 @@ class TestScopeLabeler:
         query: str,
         rows_requested: int | None = None,
         time_range_days: int | None = None,
-        sensitivity_tier: SensitivityTier = SensitivityTier.INTERNAL
+        sensitivity_tier: SensitivityTier = SensitivityTier.INTERNAL,
     ) -> GoldTrace:
         """Create a minimal test trace for labeling."""
         expected_scope = ScopeMetadata(
             rows_requested=rows_requested,
             time_range_days=time_range_days,
-            sensitivity_tier=sensitivity_tier
+            sensitivity_tier=sensitivity_tier,
         )
 
         request = UserRequest(
@@ -201,28 +170,16 @@ class TestScopeLabeler:
             text=query,
             intent_category="retrieve",
             expected_scope=expected_scope,
-            trust_tier=TrustTier.USER
+            trust_tier=TrustTier.USER,
         )
 
         policy = SystemPolicy(
-            policy_id="test_policy",
-            domain="Test",
-            description="Test policy",
-            rules=[]
+            policy_id="test_policy", domain="Test", description="Test policy", rules=[]
         )
 
-        graph = ToolCallGraph(
-            graph_id="test_graph",
-            calls=[],
-            execution_order=[]
-        )
+        graph = ToolCallGraph(graph_id="test_graph", calls=[], execution_order=[])
 
-        return GoldTrace(
-            trace_id="test_trace",
-            request=request,
-            policy=policy,
-            graph=graph
-        )
+        return GoldTrace(trace_id="test_trace", request=request, policy=policy, graph=graph)
 
 
 class TestScopeMetadataConverter:
@@ -231,9 +188,7 @@ class TestScopeMetadataConverter:
     def test_basic_conversion(self):
         """Should convert all fields correctly."""
         metadata = ScopeMetadata(
-            rows_requested=5,
-            time_range_days=7,
-            sensitivity_tier=SensitivityTier.INTERNAL
+            rows_requested=5, time_range_days=7, sensitivity_tier=SensitivityTier.INTERNAL
         )
 
         constraints = convert_scope_metadata_to_constraints(metadata)
@@ -245,10 +200,7 @@ class TestScopeMetadataConverter:
 
     def test_sensitive_tier_conversion(self):
         """CONFIDENTIAL tier should map to include_sensitive=True."""
-        metadata = ScopeMetadata(
-            rows_requested=10,
-            sensitivity_tier=SensitivityTier.CONFIDENTIAL
-        )
+        metadata = ScopeMetadata(rows_requested=10, sensitivity_tier=SensitivityTier.CONFIDENTIAL)
 
         constraints = convert_scope_metadata_to_constraints(metadata)
 
@@ -257,9 +209,7 @@ class TestScopeMetadataConverter:
     def test_none_values_use_defaults(self):
         """None values should use reasonable defaults."""
         metadata = ScopeMetadata(
-            rows_requested=None,
-            time_range_days=None,
-            sensitivity_tier=SensitivityTier.PUBLIC
+            rows_requested=None, time_range_days=None, sensitivity_tier=SensitivityTier.PUBLIC
         )
 
         constraints = convert_scope_metadata_to_constraints(metadata)
@@ -276,7 +226,7 @@ class TestBatchLabeling:
         traces = [
             self._create_simple_trace("Show latest invoice", 1),
             self._create_simple_trace("List all orders", 100),
-            self._create_simple_trace("Find 5 recent items", 5)
+            self._create_simple_trace("Find 5 recent items", 5),
         ]
 
         labeled_data = label_traces_batch(traces)
@@ -287,9 +237,7 @@ class TestBatchLabeling:
 
     def test_batch_preserves_order(self):
         """Batch labeling should preserve trace order."""
-        traces = [
-            self._create_simple_trace(f"Query {i}", i) for i in range(10)
-        ]
+        traces = [self._create_simple_trace(f"Query {i}", i) for i in range(10)]
 
         labeled_data = label_traces_batch(traces)
 
@@ -304,8 +252,7 @@ class TestBatchLabeling:
     def _create_simple_trace(self, query: str, rows: int) -> GoldTrace:
         """Create a simple test trace."""
         expected_scope = ScopeMetadata(
-            rows_requested=rows,
-            sensitivity_tier=SensitivityTier.INTERNAL
+            rows_requested=rows, sensitivity_tier=SensitivityTier.INTERNAL
         )
 
         request = UserRequest(
@@ -313,29 +260,15 @@ class TestBatchLabeling:
             domain="Test",
             text=query,
             intent_category="retrieve",
-            expected_scope=expected_scope
+            expected_scope=expected_scope,
         )
 
-        policy = SystemPolicy(
-            policy_id="test_policy",
-            domain="Test",
-            description="Test",
-            rules=[]
-        )
+        policy = SystemPolicy(policy_id="test_policy", domain="Test", description="Test", rules=[])
 
-        graph = ToolCallGraph(
-            graph_id="test_graph",
-            calls=[],
-            execution_order=[]
-        )
+        graph = ToolCallGraph(graph_id="test_graph", calls=[], execution_order=[])
 
         trace_id = query.split()[-1]
-        return GoldTrace(
-            trace_id=f"trace_{trace_id}",
-            request=request,
-            policy=policy,
-            graph=graph
-        )
+        return GoldTrace(trace_id=f"trace_{trace_id}", request=request, policy=policy, graph=graph)
 
 
 class TestRealWorldScenarios:
@@ -343,11 +276,7 @@ class TestRealWorldScenarios:
 
     def test_invoice_retrieval(self):
         """Typical invoice query."""
-        trace = self._create_trace(
-            query="Show me my latest invoice",
-            rows=None,
-            days=None
-        )
+        trace = self._create_trace(query="Show me my latest invoice", rows=None, days=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -359,9 +288,7 @@ class TestRealWorldScenarios:
     def test_bulk_search(self):
         """Bulk search query."""
         trace = self._create_trace(
-            query="Find all failed payments from last quarter",
-            rows=None,
-            days=None
+            query="Find all failed payments from last quarter", rows=None, days=None
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -372,11 +299,7 @@ class TestRealWorldScenarios:
 
     def test_directory_traversal(self):
         """File system traversal."""
-        trace = self._create_trace(
-            query="Find all Python files recursively",
-            rows=None,
-            days=None
-        )
+        trace = self._create_trace(query="Find all Python files recursively", rows=None, days=None)
 
         label = ScopeLabeler.label_trace(trace)
 
@@ -389,7 +312,7 @@ class TestRealWorldScenarios:
             query="Show salary information for employees",
             rows=None,
             days=None,
-            sensitivity=SensitivityTier.CONFIDENTIAL
+            sensitivity=SensitivityTier.CONFIDENTIAL,
         )
 
         label = ScopeLabeler.label_trace(trace)
@@ -401,13 +324,11 @@ class TestRealWorldScenarios:
         query: str,
         rows: int | None,
         days: int | None,
-        sensitivity: SensitivityTier = SensitivityTier.INTERNAL
+        sensitivity: SensitivityTier = SensitivityTier.INTERNAL,
     ) -> GoldTrace:
         """Create test trace."""
         expected_scope = ScopeMetadata(
-            rows_requested=rows,
-            time_range_days=days,
-            sensitivity_tier=sensitivity
+            rows_requested=rows, time_range_days=days, sensitivity_tier=sensitivity
         )
 
         request = UserRequest(
@@ -415,21 +336,12 @@ class TestRealWorldScenarios:
             domain="Test",
             text=query,
             intent_category="retrieve",
-            expected_scope=expected_scope
+            expected_scope=expected_scope,
         )
 
         return GoldTrace(
             trace_id="test",
             request=request,
-            policy=SystemPolicy(
-                policy_id="test",
-                domain="Test",
-                description="Test",
-                rules=[]
-            ),
-            graph=ToolCallGraph(
-                graph_id="test",
-                calls=[],
-                execution_order=[]
-            )
+            policy=SystemPolicy(policy_id="test", domain="Test", description="Test", rules=[]),
+            graph=ToolCallGraph(graph_id="test", calls=[], execution_order=[]),
         )

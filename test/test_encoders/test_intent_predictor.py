@@ -39,10 +39,7 @@ from source.encoders.intent_predictor import (
 def test_intent_predictor_initialization():
     """Test basic model initialization."""
     model = SemanticIntentPredictor(
-        vocab_size=50000,
-        hidden_dim=256,
-        num_encoder_layers=2,
-        num_heads=4
+        vocab_size=50000, hidden_dim=256, num_encoder_layers=2, num_heads=4
     )
 
     assert model.hidden_dim == 256
@@ -57,18 +54,12 @@ def test_intent_predictor_parameter_count():
     num_params = model.count_parameters()
 
     # Should be around 8M parameters (~32MB)
-    assert 15_000_000 < num_params < 20_000_000, \
-        f"Expected ~17M params, got {num_params:,}"
+    assert 15_000_000 < num_params < 20_000_000, f"Expected ~17M params, got {num_params:,}"
 
 
 def test_query_encoder_initialization():
     """Test QueryEncoder component."""
-    encoder = QueryEncoder(
-        vocab_size=50000,
-        hidden_dim=256,
-        num_layers=2,
-        num_heads=4
-    )
+    encoder = QueryEncoder(vocab_size=50000, hidden_dim=256, num_layers=2, num_heads=4)
 
     assert encoder.hidden_dim == 256
     assert isinstance(encoder.token_embedding, nn.Embedding)
@@ -92,10 +83,7 @@ def test_scope_constraints_validation():
     """Test ScopeConstraints Pydantic validation."""
     # Valid constraints
     constraints = ScopeConstraints(
-        limit=5,
-        date_range_days=30,
-        max_depth=3,
-        include_sensitive=False
+        limit=5, date_range_days=30, max_depth=3, include_sensitive=False
     )
     assert constraints.limit == 5
     assert constraints.date_range_days == 30
@@ -112,10 +100,7 @@ def test_scope_constraints_validation():
 def test_scope_constraints_tensor_conversion():
     """Test conversion between ScopeConstraints and tensors."""
     constraints = ScopeConstraints(
-        limit=10,
-        date_range_days=60,
-        max_depth=5,
-        include_sensitive=True
+        limit=10, date_range_days=60, max_depth=5, include_sensitive=True
     )
 
     # To tensor
@@ -123,8 +108,8 @@ def test_scope_constraints_tensor_conversion():
     assert tensor.shape == (4,)
     assert tensor[0] == 10  # limit
     assert tensor[1] == 60  # date_range
-    assert tensor[2] == 5   # max_depth
-    assert tensor[3] == 1   # sensitive (True)
+    assert tensor[2] == 5  # max_depth
+    assert tensor[3] == 1  # sensitive (True)
 
     # From tensor
     reconstructed = ScopeConstraints.from_tensor(tensor)
@@ -188,11 +173,7 @@ def test_scope_predictor_forward():
 
 def test_intent_predictor_forward():
     """Test SemanticIntentPredictor end-to-end prediction."""
-    model = SemanticIntentPredictor(
-        vocab_size=50000,
-        hidden_dim=256,
-        num_encoder_layers=2
-    )
+    model = SemanticIntentPredictor(vocab_size=50000, hidden_dim=256, num_encoder_layers=2)
 
     batch_size = 4
     seq_len = 20
@@ -310,7 +291,7 @@ def test_batch_processing():
     # Individual predictions
     individual_preds = []
     for i in range(8):
-        pred = model(query_tokens[i:i+1], schema_features[i:i+1])
+        pred = model(query_tokens[i : i + 1], schema_features[i : i + 1])
         individual_preds.append(pred)
 
     individual_preds = torch.cat(individual_preds, dim=0)
@@ -361,11 +342,7 @@ def test_hash_tokenizer():
 
 def test_create_intent_predictor_factory():
     """Test factory function."""
-    model = create_intent_predictor(
-        vocab_size=50000,
-        hidden_dim=256,
-        num_layers=2
-    )
+    model = create_intent_predictor(vocab_size=50000, hidden_dim=256, num_layers=2)
 
     assert isinstance(model, SemanticIntentPredictor)
     assert model.hidden_dim == 256
@@ -512,7 +489,7 @@ def test_integration_realistic_example():
     queries = [
         "show me my latest invoice",
         "find all failed payments last quarter",
-        "list recent transactions"
+        "list recent transactions",
     ]
 
     tokenized = [hash_tokenize(q, vocab_size=50000) for q in queries]

@@ -30,8 +30,8 @@ class TestAgentHarmLoader:
         """Test that load() returns an iterator."""
         loader = AgentHarmLoader()
         result = loader.load()
-        assert hasattr(result, '__iter__')
-        assert hasattr(result, '__next__')
+        assert hasattr(result, "__iter__")
+        assert hasattr(result, "__next__")
 
     def test_load_yields_dataset_samples(self):
         """Test that load() yields DatasetSample objects."""
@@ -260,13 +260,7 @@ class TestAgentHarmIntegration:
         assert len(categories) >= 5
 
         # Expected categories from AgentHarm
-        expected_categories = {
-            "Disinformation",
-            "Fraud",
-            "Privacy",
-            "Malware",
-            "Cybercrime"
-        }
+        expected_categories = {"Disinformation", "Fraud", "Privacy", "Malware", "Cybercrime"}
 
         # Should have significant overlap
         assert len(categories & expected_categories) >= 3

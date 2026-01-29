@@ -10,7 +10,6 @@ Covers:
     - Edge cases and error handling
 """
 
-import pytest
 
 from source.encoders.execution_encoder import TrustTier
 from source.provenance import (
@@ -45,10 +44,7 @@ class TestTrustTierClassification:
         """Partner sources with signatures should be SIGNED_PARTNER (Tier 2)."""
         tagger = TrustTagger()
 
-        metadata = SourceMetadata(
-            source_type=SourceType.SIGNED_DOCUMENT,
-            signature="sig:abc123"
-        )
+        metadata = SourceMetadata(source_type=SourceType.SIGNED_DOCUMENT, signature="sig:abc123")
         tier, reason = tagger.classify_trust_tier(metadata)
 
         assert tier == TrustTier.SIGNED_PARTNER
@@ -60,7 +56,7 @@ class TestTrustTierClassification:
 
         metadata = SourceMetadata(
             source_type=SourceType.SIGNED_DOCUMENT,
-            signature=None  # Missing signature
+            signature=None,  # Missing signature
         )
         tier, reason = tagger.classify_trust_tier(metadata)
 
@@ -104,8 +100,7 @@ class TestProvenanceHashing:
         tagger = TrustTagger()
 
         metadata = SourceMetadata(
-            source_type=SourceType.RAG_DOCUMENT,
-            source_uri="https://example.com/doc.md"
+            source_type=SourceType.RAG_DOCUMENT, source_uri="https://example.com/doc.md"
         )
 
         hash1 = tagger.generate_provenance_hash(metadata)
@@ -144,7 +139,7 @@ class TestProvenanceHashing:
         base_metadata = SourceMetadata(
             source_type=SourceType.RAG_DOCUMENT,
             source_uri="https://example.com/doc.md",
-            retrieval_method="vector_search"
+            retrieval_method="vector_search",
         )
         base_hash = tagger.generate_provenance_hash(base_metadata)
 
@@ -152,7 +147,7 @@ class TestProvenanceHashing:
         modified = SourceMetadata(
             source_type=SourceType.RAG_DOCUMENT,
             source_uri="https://different.com/doc.md",
-            retrieval_method="vector_search"
+            retrieval_method="vector_search",
         )
         assert tagger.generate_provenance_hash(modified) != base_hash
 
@@ -160,7 +155,7 @@ class TestProvenanceHashing:
         modified = SourceMetadata(
             source_type=SourceType.RAG_DOCUMENT,
             source_uri="https://example.com/doc.md",
-            retrieval_method="keyword_search"
+            retrieval_method="keyword_search",
         )
         assert tagger.generate_provenance_hash(modified) != base_hash
 
@@ -173,8 +168,7 @@ class TestSourceTagging:
         tagger = TrustTagger()
 
         metadata = SourceMetadata(
-            source_type=SourceType.RAG_DOCUMENT,
-            source_uri="https://example.com/api-docs.md"
+            source_type=SourceType.RAG_DOCUMENT, source_uri="https://example.com/api-docs.md"
         )
 
         tag = tagger.tag_source(metadata)
@@ -190,8 +184,7 @@ class TestSourceTagging:
         tagger = TrustTagger()
 
         metadata = SourceMetadata(
-            source_type=SourceType.INTERNAL_DATABASE,
-            source_uri="postgres://internal/users"
+            source_type=SourceType.INTERNAL_DATABASE, source_uri="postgres://internal/users"
         )
 
         tag = tagger.tag_source(metadata)
@@ -206,7 +199,7 @@ class TestSourceTagging:
         metadata = SourceMetadata(
             source_type=SourceType.PARTNER_API,
             source_uri="https://partner.com/api",
-            signature="rsa:signature_data_here"
+            signature="rsa:signature_data_here",
         )
 
         tag = tagger.tag_source(metadata)
@@ -222,7 +215,7 @@ class TestSourceTagging:
             source_type=SourceType.RAG_DOCUMENT,
             source_uri="https://docs.example.com/guide.md",
             retrieval_method="vector_search",
-            additional_metadata={"score": 0.95, "chunk_id": "chunk_42"}
+            additional_metadata={"score": 0.95, "chunk_id": "chunk_42"},
         )
 
         tag = tagger.tag_source(metadata)
@@ -239,8 +232,7 @@ class TestToolCallTagging:
         tagger = TrustTagger()
 
         metadata = SourceMetadata(
-            source_type=SourceType.RAG_DOCUMENT,
-            source_uri="https://example.com/docs.md"
+            source_type=SourceType.RAG_DOCUMENT, source_uri="https://example.com/docs.md"
         )
 
         node = tagger.tag_tool_call(
@@ -249,7 +241,7 @@ class TestToolCallTagging:
             node_id="node_1",
             source_metadata=metadata,
             scope_volume=100,
-            scope_sensitivity=3
+            scope_sensitivity=3,
         )
 
         assert node.tool_name == "execute_query"
@@ -264,15 +256,10 @@ class TestToolCallTagging:
         """Tool calls from internal sources should have INTERNAL tier."""
         tagger = TrustTagger()
 
-        metadata = SourceMetadata(
-            source_type=SourceType.SYSTEM_INSTRUCTION
-        )
+        metadata = SourceMetadata(source_type=SourceType.SYSTEM_INSTRUCTION)
 
         node = tagger.tag_tool_call(
-            tool_name="list_files",
-            arguments={},
-            node_id="node_1",
-            source_metadata=metadata
+            tool_name="list_files", arguments={}, node_id="node_1", source_metadata=metadata
         )
 
         assert node.provenance_tier == TrustTier.INTERNAL
@@ -284,10 +271,7 @@ class TestToolCallTagging:
         metadata = SourceMetadata(source_type=SourceType.INTERNAL_API)
 
         node = tagger.tag_tool_call(
-            tool_name="read_config",
-            arguments={},
-            node_id="node_1",
-            source_metadata=metadata
+            tool_name="read_config", arguments={}, node_id="node_1", source_metadata=metadata
         )
 
         assert node.scope_volume == 1
@@ -303,10 +287,10 @@ class TestPlanAuditing:
 
         audit = tagger.audit_plan_provenance([])
 
-        assert audit['total_nodes'] == 0
-        assert audit['tier_breakdown'] == {}
-        assert audit['high_risk_nodes'] == []
-        assert audit['missing_tags'] == []
+        assert audit["total_nodes"] == 0
+        assert audit["tier_breakdown"] == {}
+        assert audit["high_risk_nodes"] == []
+        assert audit["missing_tags"] == []
 
     def test_audit_counts_tier_distribution(self):
         """Audit should count nodes per trust tier."""
@@ -324,10 +308,10 @@ class TestPlanAuditing:
 
         audit = tagger.audit_plan_provenance(nodes)
 
-        assert audit['total_nodes'] == 3
-        assert audit['tier_breakdown']['INTERNAL'] == 2
-        assert audit['tier_breakdown']['PUBLIC_WEB'] == 1
-        assert audit['tier_breakdown']['SIGNED_PARTNER'] == 0
+        assert audit["total_nodes"] == 3
+        assert audit["tier_breakdown"]["INTERNAL"] == 2
+        assert audit["tier_breakdown"]["PUBLIC_WEB"] == 1
+        assert audit["tier_breakdown"]["SIGNED_PARTNER"] == 0
 
     def test_audit_identifies_high_risk_nodes(self):
         """Audit should identify nodes from untrusted sources."""
@@ -335,15 +319,13 @@ class TestPlanAuditing:
 
         public_meta = SourceMetadata(source_type=SourceType.WEB_SCRAPE)
 
-        nodes = [
-            tagger.tag_tool_call("admin_delete", {}, "risky_node", public_meta)
-        ]
+        nodes = [tagger.tag_tool_call("admin_delete", {}, "risky_node", public_meta)]
 
         audit = tagger.audit_plan_provenance(nodes)
 
-        assert len(audit['high_risk_nodes']) == 1
-        assert audit['high_risk_nodes'][0]['node_id'] == "risky_node"
-        assert audit['high_risk_nodes'][0]['trust_tier'] == "PUBLIC_WEB"
+        assert len(audit["high_risk_nodes"]) == 1
+        assert audit["high_risk_nodes"][0]["node_id"] == "risky_node"
+        assert audit["high_risk_nodes"][0]["trust_tier"] == "PUBLIC_WEB"
 
     def test_audit_detects_missing_hashes(self):
         """Audit should detect nodes without provenance hashes."""
@@ -356,12 +338,12 @@ class TestPlanAuditing:
             tool_name="tool1",
             node_id="n1",
             provenance_tier=TrustTier.INTERNAL,
-            provenance_hash=None  # Missing
+            provenance_hash=None,  # Missing
         )
 
         audit = tagger.audit_plan_provenance([node_without_hash])
 
-        assert "n1" in audit['missing_tags']
+        assert "n1" in audit["missing_tags"]
 
     def test_audit_risk_level_assessment(self):
         """Audit should assess overall risk level correctly."""
@@ -375,21 +357,21 @@ class TestPlanAuditing:
             tagger.tag_tool_call("tool1", {}, "n1", internal_meta),
             tagger.tag_tool_call("tool2", {}, "n2", internal_meta),
         ]
-        assert tagger.audit_plan_provenance(nodes_low)['risk_level'] == "LOW"
+        assert tagger.audit_plan_provenance(nodes_low)["risk_level"] == "LOW"
 
         # 50% public = HIGH risk
         nodes_high = [
             tagger.tag_tool_call("tool1", {}, "n1", internal_meta),
             tagger.tag_tool_call("tool2", {}, "n2", public_meta),
         ]
-        assert tagger.audit_plan_provenance(nodes_high)['risk_level'] == "HIGH"
+        assert tagger.audit_plan_provenance(nodes_high)["risk_level"] == "HIGH"
 
         # All public = CRITICAL risk
         nodes_critical = [
             tagger.tag_tool_call("tool1", {}, "n1", public_meta),
             tagger.tag_tool_call("tool2", {}, "n2", public_meta),
         ]
-        assert tagger.audit_plan_provenance(nodes_critical)['risk_level'] == "CRITICAL"
+        assert tagger.audit_plan_provenance(nodes_critical)["risk_level"] == "CRITICAL"
 
 
 class TestEdgeCases:
@@ -403,7 +385,7 @@ class TestEdgeCases:
             source_type=SourceType.INTERNAL_API,
             source_uri=None,
             retrieval_method=None,
-            signature=None
+            signature=None,
         )
 
         hash_str = tagger.generate_provenance_hash(metadata)
@@ -421,8 +403,8 @@ class TestEdgeCases:
             additional_metadata={
                 "embeddings": [0.1, 0.2, 0.3],
                 "nested": {"key": "value"},
-                "list": [1, 2, 3]
-            }
+                "list": [1, 2, 3],
+            },
         )
 
         hash_str = tagger.generate_provenance_hash(metadata)
@@ -434,14 +416,8 @@ class TestEdgeCases:
 
         fixed_time = "2026-01-25T12:00:00Z"
 
-        metadata1 = SourceMetadata(
-            source_type=SourceType.RAG_DOCUMENT,
-            timestamp=fixed_time
-        )
-        metadata2 = SourceMetadata(
-            source_type=SourceType.RAG_DOCUMENT,
-            timestamp=fixed_time
-        )
+        metadata1 = SourceMetadata(source_type=SourceType.RAG_DOCUMENT, timestamp=fixed_time)
+        metadata2 = SourceMetadata(source_type=SourceType.RAG_DOCUMENT, timestamp=fixed_time)
 
         hash1 = tagger.generate_provenance_hash(metadata1)
         hash2 = tagger.generate_provenance_hash(metadata2)
@@ -461,10 +437,7 @@ class TestIntegration:
             source_type=SourceType.RAG_DOCUMENT,
             source_uri="https://external-docs.com/api-reference.md",
             retrieval_method="vector_search",
-            additional_metadata={
-                "similarity_score": 0.89,
-                "chunk_index": 42
-            }
+            additional_metadata={"similarity_score": 0.89, "chunk_index": 42},
         )
 
         # Step 2: Tag the source
@@ -478,7 +451,7 @@ class TestIntegration:
             node_id="dangerous_operation",
             source_metadata=rag_metadata,
             scope_volume=1000,
-            scope_sensitivity=5
+            scope_sensitivity=5,
         )
 
         # Step 4: Verify tagging
@@ -487,8 +460,8 @@ class TestIntegration:
 
         # Step 5: Audit would flag this as high risk
         audit = tagger.audit_plan_provenance([node])
-        assert len(audit['high_risk_nodes']) == 1
-        assert audit['risk_level'] in ["HIGH", "CRITICAL"]
+        assert len(audit["high_risk_nodes"]) == 1
+        assert audit["risk_level"] in ["HIGH", "CRITICAL"]
 
     def test_multi_source_plan_audit(self):
         """Test auditing a plan with mixed source trust levels."""
@@ -496,10 +469,7 @@ class TestIntegration:
 
         # Mix of sources
         system_meta = SourceMetadata(source_type=SourceType.SYSTEM_INSTRUCTION)
-        partner_meta = SourceMetadata(
-            source_type=SourceType.PARTNER_API,
-            signature="sig:verified"
-        )
+        partner_meta = SourceMetadata(source_type=SourceType.PARTNER_API, signature="sig:verified")
         rag_meta = SourceMetadata(source_type=SourceType.RAG_DOCUMENT)
 
         nodes = [
@@ -511,8 +481,8 @@ class TestIntegration:
 
         audit = tagger.audit_plan_provenance(nodes)
 
-        assert audit['total_nodes'] == 4
-        assert audit['tier_breakdown']['INTERNAL'] == 1
-        assert audit['tier_breakdown']['SIGNED_PARTNER'] == 1
-        assert audit['tier_breakdown']['PUBLIC_WEB'] == 2
-        assert len(audit['high_risk_nodes']) == 2  # Both RAG operations
+        assert audit["total_nodes"] == 4
+        assert audit["tier_breakdown"]["INTERNAL"] == 1
+        assert audit["tier_breakdown"]["SIGNED_PARTNER"] == 1
+        assert audit["tier_breakdown"]["PUBLIC_WEB"] == 2
+        assert len(audit["high_risk_nodes"]) == 2  # Both RAG operations

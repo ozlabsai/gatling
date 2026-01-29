@@ -45,9 +45,7 @@ class TraceValidator:
         for call in trace.graph.calls:
             for dep in call.dependencies:
                 if dep not in call_ids:
-                    errors.append(
-                        f"Call {call.call_id} depends on non-existent call {dep}"
-                    )
+                    errors.append(f"Call {call.call_id} depends on non-existent call {dep}")
 
         # Check execution order references all calls
         if set(trace.graph.execution_order) != call_ids:
@@ -63,9 +61,7 @@ class TraceValidator:
             if call:
                 for dep in call.dependencies:
                     if dep not in executed:
-                        errors.append(
-                            f"Call {call_id} scheduled before its dependency {dep}"
-                        )
+                        errors.append(f"Call {call_id} scheduled before its dependency {dep}")
                 executed.add(call_id)
 
         return len(errors) == 0, errors
@@ -90,9 +86,7 @@ class TraceValidator:
         # Check for forbidden operations
         for call in trace.graph.calls:
             if call.tool_id in policy.forbidden_operations:
-                violations.append(
-                    f"Used forbidden operation: {call.tool_id}"
-                )
+                violations.append(f"Used forbidden operation: {call.tool_id}")
 
         # Check scope limits
         for call in trace.graph.calls:

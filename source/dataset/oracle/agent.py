@@ -7,7 +7,6 @@ policy-compliant tool-use traces.
 
 import json
 import os
-from datetime import datetime
 
 from anthropic import Anthropic
 
@@ -42,9 +41,7 @@ class OracleAgent:
         """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise ValueError(
-                "ANTHROPIC_API_KEY must be provided or set in environment"
-            )
+            raise ValueError("ANTHROPIC_API_KEY must be provided or set in environment")
 
         self.client = Anthropic(api_key=self.api_key)
         self.model = "claude-sonnet-4-5-20250929"  # Oracle-quality model
@@ -78,9 +75,7 @@ class OracleAgent:
             )
 
             # Step 1: Generate diverse user requests
-            requests = self._generate_user_requests(
-                domain, tools, policy, batch_traces
-            )
+            requests = self._generate_user_requests(domain, tools, policy, batch_traces)
 
             # Step 2: For each request, generate tool-call graph
             for request in requests:
@@ -268,9 +263,7 @@ class OracleAgent:
             violations = validation_result.get("violations", [])
 
             if not is_compliant:
-                print(
-                    f"Trace {trace.trace_id} failed validation: {violations}"
-                )
+                print(f"Trace {trace.trace_id} failed validation: {violations}")
 
             return is_compliant
         else:
@@ -304,10 +297,7 @@ class OracleAgent:
             try:
                 traces = self.generate_traces_for_domain(domain, traces_per_domain)
                 all_traces.extend(traces)
-                print(
-                    f"✓ Generated {len(traces)} traces for {domain} "
-                    f"(Total: {len(all_traces)})"
-                )
+                print(f"✓ Generated {len(traces)} traces for {domain} (Total: {len(all_traces)})")
             except Exception as e:
                 print(f"✗ Error processing {domain}: {e}")
                 continue

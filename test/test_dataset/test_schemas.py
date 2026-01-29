@@ -4,7 +4,6 @@ Tests for tool schema registry.
 Validates that domain schemas and policies are properly configured.
 """
 
-import pytest
 
 from source.dataset.schemas.registry import DomainRegistry
 

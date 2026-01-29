@@ -15,7 +15,6 @@ Strategy: 50% mutation rate on 4M gold traces
 """
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -130,8 +129,6 @@ class BoundaryDatasetGenerator:
             GoldTrace object
         """
         from source.dataset.models import (
-            ProvenancePointer,
-            ScopeMetadata,
             SystemPolicy,
             ToolCall,
             ToolCallGraph,
@@ -179,10 +176,10 @@ class BoundaryDatasetGenerator:
             checkpoint_every = 500
 
         print(f"\n{'=' * 70}")
-        print(f"🎯 Gatling Policy Boundary Case Generation - Stage B")
+        print("🎯 Gatling Policy Boundary Case Generation - Stage B")
         print(f"{'=' * 70}")
         print(f"Target: {target_violations:,} boundary violations")
-        print(f"Strategy: Systematic policy boundary mutations")
+        print("Strategy: Systematic policy boundary mutations")
         print(f"Output: {self.output_dir}")
         print(f"{'=' * 70}\n")
 
@@ -205,7 +202,7 @@ class BoundaryDatasetGenerator:
             traces_loaded += len(gold_traces)
 
             # Generate boundary violations
-            print(f"🔄 Applying boundary mutations...")
+            print("🔄 Applying boundary mutations...")
             batch_violations = self.mutator.mutate_traces(gold_traces)
 
             all_violations.extend(batch_violations)
@@ -213,9 +210,7 @@ class BoundaryDatasetGenerator:
 
             # Update type statistics
             mutator_stats = self.mutator.get_statistics()
-            self.stats["by_violation_type"] = mutator_stats.get(
-                "by_violation_type", {}
-            )
+            self.stats["by_violation_type"] = mutator_stats.get("by_violation_type", {})
 
             print(
                 f"  ✓ Generated {len(batch_violations):,} violations "
@@ -239,13 +234,9 @@ class BoundaryDatasetGenerator:
         self._save_final_dataset(all_violations)
         self._print_final_stats(all_violations)
 
-    def _save_checkpoint(
-        self, violations: list[BoundaryViolation], checkpoint_num: int
-    ) -> None:
+    def _save_checkpoint(self, violations: list[BoundaryViolation], checkpoint_num: int) -> None:
         """Save a checkpoint of violations generated so far."""
-        checkpoint_path = (
-            self.output_dir / f"checkpoint_{checkpoint_num:07d}.jsonl"
-        )
+        checkpoint_path = self.output_dir / f"checkpoint_{checkpoint_num:07d}.jsonl"
         print(f"\n💾 Saving checkpoint: {checkpoint_path}")
 
         with open(checkpoint_path, "w") as f:
@@ -255,10 +246,7 @@ class BoundaryDatasetGenerator:
     def _save_final_dataset(self, violations: list[BoundaryViolation]) -> None:
         """Save the final complete dataset."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        final_path = (
-            self.output_dir
-            / f"boundary_violations_{len(violations)}_{timestamp}.jsonl"
-        )
+        final_path = self.output_dir / f"boundary_violations_{len(violations)}_{timestamp}.jsonl"
 
         print(f"\n💾 Saving final dataset: {final_path}")
 
@@ -280,9 +268,7 @@ class BoundaryDatasetGenerator:
 
         print(f"💾 Saved metadata: {metadata_path}")
 
-    def _compute_distribution(
-        self, violations: list[BoundaryViolation]
-    ) -> dict[str, Any]:
+    def _compute_distribution(self, violations: list[BoundaryViolation]) -> dict[str, Any]:
         """Compute distribution statistics for violations."""
         type_counts = {}
         severity_buckets = {"very_subtle": 0, "subtle": 0, "moderate": 0}
@@ -314,23 +300,25 @@ class BoundaryDatasetGenerator:
         distribution = self._compute_distribution(violations)
 
         print(f"\n{'=' * 70}")
-        print(f"✅ Boundary Case Generation Complete!")
+        print("✅ Boundary Case Generation Complete!")
         print(f"{'=' * 70}")
         print(f"Total violations generated: {len(violations):,}")
         print(f"Gold traces processed: {self.stats['total_gold_traces_loaded']:,}")
-        print(f"Success rate: {len(violations)/self.stats['total_gold_traces_loaded']*100:.1f}%")
+        print(
+            f"Success rate: {len(violations) / self.stats['total_gold_traces_loaded'] * 100:.1f}%"
+        )
         print(f"Duration: {duration}")
         print(f"Rate: {len(violations) / duration.total_seconds():.2f} violations/sec")
 
-        print(f"\nViolation type distribution:")
+        print("\nViolation type distribution:")
         for vtype, count in sorted(
             distribution["by_type"].items(), key=lambda x: x[1], reverse=True
         ):
-            print(f"  {vtype}: {count:,} ({count/len(violations)*100:.1f}%)")
+            print(f"  {vtype}: {count:,} ({count / len(violations) * 100:.1f}%)")
 
-        print(f"\nSeverity distribution:")
+        print("\nSeverity distribution:")
         for severity, count in distribution["by_severity"].items():
-            print(f"  {severity}: {count:,} ({count/len(violations)*100:.1f}%)")
+            print(f"  {severity}: {count:,} ({count / len(violations) * 100:.1f}%)")
         print(f"  Average severity: {distribution['avg_severity']:.3f}")
 
         print(f"{'=' * 70}\n")

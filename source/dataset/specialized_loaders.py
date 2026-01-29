@@ -224,7 +224,14 @@ class AppleMMauLoader(DatasetLoader):
         failed = 0
 
         try:
-            ds = load_dataset("apple/mmau", split="train", cache_dir=self.cache_dir)
+            # Load only tool_use subset to avoid schema conflicts
+            # (dataset has mixed schemas across 26 files)
+            ds = load_dataset(
+                "apple/mmau",
+                data_files="tool_use_execution_all_20240712.jsonl",
+                split="train",
+                cache_dir=self.cache_dir,
+            )
 
             for idx, sample in enumerate(ds):
                 if self.max_samples and idx >= self.max_samples:
@@ -303,36 +310,41 @@ class NvidiaToolScaleLoader(DatasetLoader):
         """Parse function calls from ToolScale format."""
         nodes = []
 
-        # ToolScale typically has 'functions' or 'tools' field
-        # (tools metadata not used for transformation, only conversation)
-        conversation = sample.get("conversation", [])
+        # ToolScale schema: evaluation_criteria.actions contains tool calls
+        evaluation_criteria = sample.get("evaluation_criteria", {})
+        if not evaluation_criteria:
+            return nodes
 
-        # Extract function calls from conversation
-        for turn_idx, turn in enumerate(conversation):
-            if isinstance(turn, dict) and "function_call" in turn:
-                func_call = turn["function_call"]
-                tool_name = func_call.get("name", "unknown")
-                arguments = func_call.get("arguments", {})
+        actions = evaluation_criteria.get("actions", [])
 
-                # Parse arguments if they're JSON string
-                if isinstance(arguments, str):
-                    try:
-                        arguments = json.loads(arguments)
-                    except json.JSONDecodeError:
-                        arguments = {"raw": arguments}
+        for action_idx, action in enumerate(actions):
+            if not isinstance(action, dict):
+                continue
 
-                node = ToolCallNode(
-                    tool_name=tool_name,
-                    arguments=arguments,
-                    provenance_tier=TrustTier.INTERNAL,
-                    provenance_hash=hashlib.sha256(f"{sample_id}_{turn_idx}".encode()).hexdigest()[
-                        :16
-                    ],
-                    scope_volume=1,
-                    scope_sensitivity=2,
-                    node_id=f"{sample_id}_tool_{turn_idx}",
-                )
-                nodes.append(node)
+            # Extract tool name and arguments
+            tool_name = action.get("name", action.get("function", "unknown_tool"))
+            arguments = action.get("arguments", {})
+
+            # Filter out null values from arguments
+            if isinstance(arguments, dict):
+                arguments = {k: v for k, v in arguments.items() if v is not None}
+
+            # Skip if no meaningful arguments
+            if not tool_name or tool_name == "unknown_tool":
+                continue
+
+            node = ToolCallNode(
+                tool_name=tool_name,
+                arguments=arguments,
+                provenance_tier=TrustTier.INTERNAL,
+                provenance_hash=hashlib.sha256(f"{sample_id}_{action_idx}".encode()).hexdigest()[
+                    :16
+                ],
+                scope_volume=1,
+                scope_sensitivity=2,
+                node_id=f"{sample_id}_tool_{action_idx}",
+            )
+            nodes.append(node)
 
         return nodes
 
@@ -493,7 +505,8 @@ class NvidiaNeMotronSafetyLoader(DatasetLoader):
         try:
             ds = load_dataset(
                 "nvidia/Nemotron-AIQ-Agentic-Safety-Dataset-1.0",
-                split="train",
+                "safety",  # Config required: ['safety', 'security']
+                split="with_defense",  # Available splits: ['with_defense', 'without_defense']
                 cache_dir=self.cache_dir,
             )
 
@@ -604,11 +617,23 @@ class ToolPrefPairwiseLoader(DatasetLoader):
         nodes = []
 
         # Get the appropriate example (preferred or non-preferred)
-        example_key = "chosen" if is_preferred else "rejected"
-        example = sample.get(example_key, {})
+        # Dataset uses chosen_response/reject_response, not chosen/rejected
+        example_key = "chosen_response" if is_preferred else "reject_response"
+        example = sample.get(example_key)
 
-        # Extract tool calls
-        tools = example.get("tool_calls", example.get("functions", []))
+        # Handle both old and new schema formats
+        if example is None:
+            example_key = "chosen" if is_preferred else "rejected"
+            example = sample.get(example_key, {})
+
+        # Extract tool calls from various possible formats
+        if isinstance(example, dict):
+            tools = example.get("tool_calls", example.get("functions", []))
+        elif isinstance(example, list):
+            # If example is a list of messages, look for tool calls in content
+            tools = []
+        else:
+            tools = []
 
         for idx, tool_info in enumerate(tools):
             tool_name = tool_info.get("name", "unknown")
@@ -634,9 +659,25 @@ class ToolPrefPairwiseLoader(DatasetLoader):
         failed = 0
 
         try:
-            ds = load_dataset(
-                "RioLee/ToolPref-Pairwise-30K", split="train", cache_dir=self.cache_dir
-            )
+            # Dataset has schema conflicts - try loading and catch schema errors
+            try:
+                ds = load_dataset(
+                    "RioLee/ToolPref-Pairwise-30K",
+                    split="train",
+                    cache_dir=self.cache_dir,
+                )
+            except Exception as load_error:
+                # Schema cast errors - dataset has mixed parquet schemas
+                # Skip this loader for now (Track 4 Phase 2 will address)
+                print(f"Warning: ToolPref dataset has schema conflicts: {load_error}")
+                self._stats = {
+                    "total_samples": 0,
+                    "successful_transforms": 0,
+                    "failed_transforms": 0,
+                    "transform_rate": 0.0,
+                    "load_error": str(load_error),
+                }
+                return
 
             for idx, sample in enumerate(ds):
                 if self.max_samples and idx >= self.max_samples:

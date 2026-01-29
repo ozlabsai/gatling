@@ -25,7 +25,7 @@ Example Usage:
     metadata = SourceMetadata(
         source_type="rag_document",
         source_uri="https://example.com/docs/api.md",
-        retrieval_method="vector_search"
+        retrieval_method="vector_search",
     )
 
     tag = tagger.tag_source(metadata)
@@ -36,17 +36,17 @@ Example Usage:
 
 import hashlib
 import json
-from datetime import datetime, timezone
-from enum import IntEnum
-from typing import Any, Literal
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from source.encoders.execution_encoder import TrustTier, ToolCallNode
+from source.encoders.execution_encoder import ToolCallNode, TrustTier
 
 
 class SourceType(str):
     """Types of data sources for trust classification."""
+
     SYSTEM_INSTRUCTION = "system_instruction"
     INTERNAL_DATABASE = "internal_database"
     INTERNAL_API = "internal_api"
@@ -60,20 +60,35 @@ class SourceType(str):
 
 class SourceMetadata(BaseModel):
     """Metadata describing a data source for trust classification."""
-    source_type: str = Field(..., description="Type of source (e.g., 'rag_document', 'internal_api')")
+
+    source_type: str = Field(
+        ..., description="Type of source (e.g., 'rag_document', 'internal_api')"
+    )
     source_uri: str | None = Field(default=None, description="URI or identifier of the source")
-    retrieval_method: str | None = Field(default=None, description="How data was retrieved (e.g., 'vector_search')")
-    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat(), description="Retrieval timestamp")
-    signature: str | None = Field(default=None, description="Cryptographic signature (for signed sources)")
-    additional_metadata: dict[str, Any] = Field(default_factory=dict, description="Extra classification hints")
+    retrieval_method: str | None = Field(
+        default=None, description="How data was retrieved (e.g., 'vector_search')"
+    )
+    timestamp: str = Field(
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+        description="Retrieval timestamp",
+    )
+    signature: str | None = Field(
+        default=None, description="Cryptographic signature (for signed sources)"
+    )
+    additional_metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Extra classification hints"
+    )
 
 
 class ProvenanceTag(BaseModel):
     """Complete provenance tag for a retrieval snippet."""
+
     trust_tier: TrustTier = Field(..., description="Classified trust level")
     provenance_hash: str = Field(..., description="Cryptographic hash of source metadata")
     source_metadata: SourceMetadata = Field(..., description="Complete source information")
-    classification_reason: str = Field(..., description="Human-readable explanation of classification")
+    classification_reason: str = Field(
+        ..., description="Human-readable explanation of classification"
+    )
 
 
 class TrustTagger:
@@ -140,10 +155,16 @@ class TrustTagger:
         # Tier 2: Signed partner sources (only if signature present)
         if source_type in self._partner_sources:
             if metadata.signature:
-                return TrustTier.SIGNED_PARTNER, f"Signed partner source with valid signature: {source_type}"
+                return (
+                    TrustTier.SIGNED_PARTNER,
+                    f"Signed partner source with valid signature: {source_type}",
+                )
             else:
                 # No signature = downgrade to public
-                return TrustTier.PUBLIC_WEB, f"Partner source missing signature, treated as untrusted: {source_type}"
+                return (
+                    TrustTier.PUBLIC_WEB,
+                    f"Partner source missing signature, treated as untrusted: {source_type}",
+                )
 
         # Tier 3: Public/untrusted sources
         if source_type in self._public_sources:
@@ -166,14 +187,10 @@ class TrustTagger:
             Hash string in format "sha256:<hex_digest>"
         """
         # Create canonical JSON representation for hashing
-        canonical = json.dumps(
-            metadata.model_dump(),
-            sort_keys=True,
-            separators=(',', ':')
-        )
+        canonical = json.dumps(metadata.model_dump(), sort_keys=True, separators=(",", ":"))
 
         # Generate SHA-256 hash
-        hash_obj = hashlib.sha256(canonical.encode('utf-8'))
+        hash_obj = hashlib.sha256(canonical.encode("utf-8"))
         hex_digest = hash_obj.hexdigest()
 
         return f"sha256:{hex_digest}"
@@ -201,7 +218,7 @@ class TrustTagger:
             trust_tier=trust_tier,
             provenance_hash=provenance_hash,
             source_metadata=metadata,
-            classification_reason=reason
+            classification_reason=reason,
         )
 
     def tag_tool_call(
@@ -211,7 +228,7 @@ class TrustTagger:
         node_id: str,
         source_metadata: SourceMetadata,
         scope_volume: int = 1,
-        scope_sensitivity: int = 1
+        scope_sensitivity: int = 1,
     ) -> ToolCallNode:
         """
         Create a ToolCallNode with provenance tagging applied.
@@ -241,7 +258,7 @@ class TrustTagger:
             provenance_tier=tag.trust_tier,
             provenance_hash=tag.provenance_hash,
             scope_volume=scope_volume,
-            scope_sensitivity=scope_sensitivity
+            scope_sensitivity=scope_sensitivity,
         )
 
     def audit_plan_provenance(self, nodes: list[ToolCallNode]) -> dict[str, Any]:
@@ -259,18 +276,14 @@ class TrustTagger:
         """
         if not nodes:
             return {
-                'total_nodes': 0,
-                'tier_breakdown': {},
-                'high_risk_nodes': [],
-                'missing_tags': []
+                "total_nodes": 0,
+                "tier_breakdown": {},
+                "high_risk_nodes": [],
+                "missing_tags": [],
             }
 
         # Count nodes per tier
-        tier_counts = {
-            'INTERNAL': 0,
-            'SIGNED_PARTNER': 0,
-            'PUBLIC_WEB': 0
-        }
+        tier_counts = {"INTERNAL": 0, "SIGNED_PARTNER": 0, "PUBLIC_WEB": 0}
 
         high_risk_nodes = []
         missing_tags = []
@@ -282,23 +295,25 @@ class TrustTagger:
 
             # Identify high-risk: untrusted sources
             if node.provenance_tier == TrustTier.PUBLIC_WEB:
-                high_risk_nodes.append({
-                    'node_id': node.node_id,
-                    'tool_name': node.tool_name,
-                    'trust_tier': 'PUBLIC_WEB',
-                    'provenance_hash': node.provenance_hash
-                })
+                high_risk_nodes.append(
+                    {
+                        "node_id": node.node_id,
+                        "tool_name": node.tool_name,
+                        "trust_tier": "PUBLIC_WEB",
+                        "provenance_hash": node.provenance_hash,
+                    }
+                )
 
             # Check for missing provenance hash
             if not node.provenance_hash:
                 missing_tags.append(node.node_id)
 
         return {
-            'total_nodes': len(nodes),
-            'tier_breakdown': tier_counts,
-            'high_risk_nodes': high_risk_nodes,
-            'missing_tags': missing_tags,
-            'risk_level': self._assess_risk_level(tier_counts, len(nodes))
+            "total_nodes": len(nodes),
+            "tier_breakdown": tier_counts,
+            "high_risk_nodes": high_risk_nodes,
+            "missing_tags": missing_tags,
+            "risk_level": self._assess_risk_level(tier_counts, len(nodes)),
         }
 
     def _assess_risk_level(self, tier_counts: dict[str, int], total: int) -> str:
@@ -306,7 +321,7 @@ class TrustTagger:
         if total == 0:
             return "NONE"
 
-        public_ratio = tier_counts['PUBLIC_WEB'] / total
+        public_ratio = tier_counts["PUBLIC_WEB"] / total
 
         if public_ratio == 0:
             return "LOW"
