@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769680648422,
+  "lastUpdate": 1769682775167,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -310,6 +310,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0015517235671060824",
             "extra": "mean: 259.3775731999955 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "guy.na8@gmail.com",
+            "name": "opal",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "guy.na8@gmail.com",
+            "name": "Clem 🤗",
+            "username": "GuyNachshon"
+          },
+          "distinct": true,
+          "id": "3dbc6fa60675682202e201713b958b264c8393c1",
+          "message": "fix: Unified script Opal import - clear all source modules to prevent namespace collision\n\nThe unified aggregation script failed to import Opal loaders with:\n  'No module named source.dataset.specialized_loaders'\n\nRoot cause: Opal's __init__.py imports from source.dataset.loaders,\nwhich resolved to main gatling's loaders.py instead of opal's version\ndue to sys.path order.\n\nFix: Clear ALL source.* modules before importing (matching Jasper/Topaz\npattern), not just the specific module.\n\nIntegration test results (--track opal --sample-mode):\n  ✓ Imported 7 loaders from Opal\n  ✓ Generated 290 samples (Apple: 100, ToolScale: 96, Turkish: 94)\n  ✓ Properly filtered Nemotron (0 adversarial samples)\n  ✓ Gracefully handled upstream blocks (ToolPref, AstraSFT, ToolMind)\n\nCo-authored-by: Claude <noreply@anthropic.com>\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-01-29T12:31:55+02:00",
+          "tree_id": "6396cdcb91037e3d50d3cfd2192143aefeb17f86",
+          "url": "https://github.com/ozlabsai/gatling/commit/3dbc6fa60675682202e201713b958b264c8393c1"
+        },
+        "date": 1769682774307,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 4.334870365658396,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0015243626808984694",
+            "extra": "mean: 230.68740599999842 msec\nrounds: 5"
           }
         ]
       }
