@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769597198640,
+  "lastUpdate": 1769680648422,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -279,6 +279,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0011728608270626354",
             "extra": "mean: 262.47329540000237 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "58976716+GuyNachshon@users.noreply.github.com",
+            "name": "Guy Nachshon",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dcb8c6ba70bdbd94b68c772494239c324e6890c3",
+          "message": "Polecat/opal/ga 3gcx@mkyhrb8b (#25)\n\n* feat: Track 4 - Specialized+Safety Dataset Loaders (7 datasets)\n\nImplements 7 BENIGN specialized dataset loaders for Tier I training:\n\n**Loaders Implemented**:\n1. AppleMMauLoader (apple/mmau) - Multi-modal agent understanding\n2. NvidiaToolScaleLoader (nvidia/ToolScale) - Function calling at scale\n3. NvidiaNeMotronSafetyLoader (nvidia/Nemotron) - BENIGN FILTER ONLY\n4. ToolPrefPairwiseLoader (RioLee/ToolPref-Pairwise-30K) - Preference pairs\n5. AstraSFTLoader (ykckevin/astra_sft) - ASTRA SFT data\n6. ToolMindLoader (Nanbeige/ToolMind) - Tool reasoning\n7. TurkishFunctionCallingLoader (atasoglu/turkish-function-calling-20k)\n\n**Key Features**:\n- All samples labeled \"benign\"\n- Provenance tier = TrustTier.INTERNAL (Tier 1)\n- Nemotron safety loader filters harmful samples (only benign pass)\n- Transform to ExecutionPlan format\n- Comprehensive error handling\n\n**Testing**:\n- 29 test cases (28 passing, 1 skipped for HF download)\n- 100% of unit tests passing\n- Full coverage of all 7 loaders\n\n**Files**:\n- source/dataset/specialized_loaders.py (1,100 lines)\n- test/test_dataset/test_specialized_loaders.py (500 lines)\n- docs/TRACK4_SPECIALIZED_LOADERS.md (comprehensive guide)\n\n**Deliverable**: Production-ready loaders ready for Tier I training integration\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n\n* fix: UV environment isolation for specialized loaders\n\nFixes cross-polecat import failures by making specialized_loaders.py\nself-contained for UV-isolated environments.\n\n**Problem**:\n- specialized_loaders.py imported from source.dataset.loaders\n- Cross-module imports fail in UV-isolated polecat environments\n- Mayor requested subprocess or module copy solution\n\n**Solution**:\n- Inlined base classes directly into specialized_loaders.py:\n  - TrustTier (IntEnum)\n  - ToolCallNode (Pydantic model)\n  - ExecutionPlan (Pydantic model)\n  - DatasetSample (Pydantic model)\n  - DatasetLoader (ABC)\n- Module is now fully self-contained\n- No external imports from source.* modules\n\n**New Script**:\n- scripts/generate_tier1_dataset.py\n- Standalone Tier I dataset generation\n- Works in any UV environment\n- Comprehensive statistics and validation\n\n**Testing**:\n- All 28/28 tests still passing\n- Script tested with --dry-run\n- Self-contained execution verified\n\n**Note**: Dataset schema issues (apple/mmau, Nemotron config, ToolPref)\nare separate from UV isolation and will be addressed in dataset-specific\nfixes.\n\nResolves mayor's UV isolation issue for Track 4 loaders.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-01-29T11:56:30+02:00",
+          "tree_id": "bed8a85e31ca34f87e86f855411bd4dc713f0eb4",
+          "url": "https://github.com/ozlabsai/gatling/commit/dcb8c6ba70bdbd94b68c772494239c324e6890c3"
+        },
+        "date": 1769680648142,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.8553834383705206,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0015517235671060824",
+            "extra": "mean: 259.3775731999955 msec\nrounds: 5"
           }
         ]
       }
