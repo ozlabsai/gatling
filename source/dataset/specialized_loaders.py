@@ -23,18 +23,108 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from datetime import datetime
+from enum import IntEnum
 from typing import Any
 
 from datasets import load_dataset
 from dotenv import load_dotenv
-
-from source.dataset.loaders import DatasetLoader, DatasetSample
-from source.encoders.execution_encoder import ExecutionPlan, ToolCallNode, TrustTier
+from pydantic import BaseModel, Field, field_validator
 
 # Load environment variables
 load_dotenv()
+
+
+# ============================================================================
+# STANDALONE BASE CLASSES (for UV environment isolation)
+# ============================================================================
+# These classes are copied from source.dataset.loaders and source.encoders.execution_encoder
+# to make this module self-contained and avoid cross-polecat import failures.
+
+
+class TrustTier(IntEnum):
+    """Trust levels for data provenance."""
+
+    INTERNAL = 1  # System instructions, internal databases
+    SIGNED_PARTNER = 2  # Verified external sources
+    PUBLIC_WEB = 3  # Untrusted retrieval (RAG, web scraping)
+
+
+class ToolCallNode(BaseModel):
+    """A single tool invocation in the execution plan graph."""
+
+    tool_name: str = Field(..., min_length=1)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+
+    # Provenance metadata
+    provenance_tier: TrustTier = Field(default=TrustTier.INTERNAL)
+    provenance_hash: str | None = Field(default=None)
+
+    # Scope metadata
+    scope_volume: int = Field(default=1, ge=1)
+    scope_sensitivity: int = Field(default=1, ge=1, le=5)
+
+    # Graph metadata
+    node_id: str
+
+    @field_validator("provenance_tier", mode="before")
+    @classmethod
+    def parse_trust_tier(cls, v):
+        """Parse trust tier from int or TrustTier."""
+        if isinstance(v, int):
+            return TrustTier(v)
+        return v
+
+
+class ExecutionPlan(BaseModel):
+    """Complete execution plan represented as a typed tool-call graph."""
+
+    nodes: list[ToolCallNode] = Field(..., min_length=1)
+    edges: list[tuple[str, str]] = Field(default_factory=list)
+
+    @field_validator("edges")
+    @classmethod
+    def validate_edges(cls, v, info):
+        """Ensure edge endpoints reference valid nodes."""
+        if "nodes" not in info.data:
+            return v
+
+        node_ids = {node.node_id for node in info.data["nodes"]}
+        for src, dst in v:
+            if src not in node_ids or dst not in node_ids:
+                raise ValueError(f"Edge ({src}, {dst}) references non-existent node")
+        return v
+
+
+class DatasetSample(BaseModel):
+    """Standard format for dataset samples with ExecutionPlan and metadata."""
+
+    execution_plan: ExecutionPlan
+    label: str  # "harmful" | "benign" | "policy_violation"
+    original_id: str
+    category: str | None = None
+    metadata: dict[str, Any] = {}
+
+
+class DatasetLoader(ABC):
+    """Abstract base class for external dataset loaders."""
+
+    @abstractmethod
+    def load(self) -> Iterator[DatasetSample]:
+        """Load dataset and yield DatasetSample objects."""
+        pass
+
+    @abstractmethod
+    def get_stats(self) -> dict[str, Any]:
+        """Return statistics about the loaded dataset."""
+        pass
+
+
+# ============================================================================
+# SPECIALIZED LOADERS (Track 4)
+# ============================================================================
 
 
 class AppleMMauLoader(DatasetLoader):

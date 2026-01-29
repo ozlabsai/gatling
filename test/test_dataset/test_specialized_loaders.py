@@ -19,14 +19,15 @@ import pytest
 from source.dataset.specialized_loaders import (
     AppleMMauLoader,
     AstraSFTLoader,
+    ExecutionPlan,
     NvidiaNeMotronSafetyLoader,
     NvidiaToolScaleLoader,
     ToolMindLoader,
     ToolPrefPairwiseLoader,
+    TrustTier,
     TurkishFunctionCallingLoader,
     load_all_specialized_datasets,
 )
-from source.encoders.execution_encoder import ExecutionPlan, TrustTier
 
 
 class TestAppleMMauLoader:
