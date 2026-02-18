@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769682775167,
+  "lastUpdate": 1771452986050,
   "repoUrl": "https://github.com/ozlabsai/gatling",
   "entries": {
     "Benchmark": [
@@ -341,6 +341,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0015243626808984694",
             "extra": "mean: 230.68740599999842 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "guy.na8@gmail.com",
+            "name": "mayor",
+            "username": "GuyNachshon"
+          },
+          "committer": {
+            "email": "guy.na8@gmail.com",
+            "name": "Clem 🤗",
+            "username": "GuyNachshon"
+          },
+          "distinct": true,
+          "id": "66232ded126cc90a43437772944664d31a2c0687",
+          "message": "feat: Add full gatling source tree - encoders, energy, repair, dataset, tests\n\nAdds all core source modules developed across parallel workstreams:\n\nSource:\n- source/encoders/: ExecutionEncoder (graph-transformer), GovernanceEncoder, IntentPredictor\n- source/energy/: Energy function framework and critics (E_hierarchy, E_provenance, E_scope, E_flow)\n- source/repair/: Discrete repair engine (greedy + beam search)\n- source/provenance/: Trust tier system and cryptographic tagging\n- source/dataset/: Dataset generator, models, validators, unified transformer\n\nScripts:\n- scripts/train_execution_encoder.py: VICReg Stage 1 self-supervised training\n- scripts/generate_adversarial_dataset.py, build_jepa_pretraining_dataset.py\n- scripts/upload_to_huggingface.py, discover_hf_datasets.py\n\nTests: Full test suite for encoders, energy, repair, provenance\nDocs: Architecture docs, dataset strategy, CI/CD, benchmark setup\nConfig: pyproject.toml, ruff.toml, Makefile, CI workflow, pre-commit hooks\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-02-19T00:14:52+02:00",
+          "tree_id": "cec46e9bb49de7b96ad13576890f25591e4e60ab",
+          "url": "https://github.com/ozlabsai/gatling/commit/66232ded126cc90a43437772944664d31a2c0687"
+        },
+        "date": 1771452985631,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_encoders/test_governance_encoder.py::TestPerformance::test_inference_latency",
+            "value": 3.778583244093181,
+            "unit": "iter/sec",
+            "range": "stddev: 0.004470787059966765",
+            "extra": "mean: 264.64945600000647 msec\nrounds: 5"
           }
         ]
       }
