@@ -1,0 +1,52 @@
+[project]
+name = "gatling"
+version = "0.1.0"
+description = "Energy-based integrity layer for agentic systems"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # Multi-agent system dependencies
+    "networkx>=3.0",        # Dependency graph management
+    "anthropic>=0.18.0",    # API-based autonomous agents
+    "matplotlib>=3.7.0",    # Graph visualization
+    # JEPA encoder dependencies
+    "torch>=2.5.0",         # PyTorch for neural networks
+    "transformers>=4.46.0", # Hugging Face transformers
+    "python-dotenv>=1.0.0", # Environment variable management
+    "pyyaml>=6.0.0",        # YAML parsing for policies
+    "pydantic>=2.10.0",     # Type validation and serialization
+    "numpy>=2.0.0",         # Numerical operations
+    "datasets>=3.0.0",      # HuggingFace datasets for training data
+    # Testing dependencies
+    "pytest>=8.3.0",        # Testing framework
+    "pytest-cov>=6.0.0",    # Coverage reporting
+    "pytest-benchmark>=5.1.0",  # Performance benchmarking
+    "psutil>=6.1.1",        # Process and system monitoring
+    "types-pyyaml>=6.0.0",  # Type stubs for PyYAML
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.10.0",       # Code formatting
+    "ruff>=0.8.0",          # Fast Python linter
+    "mypy>=1.13.0",         # Static type checking
+    "pre-commit>=4.0.0",    # Git hooks for code quality
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
+markers = [
+    "benchmark: performance benchmark tests",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=9.0.1",
+    "pytest-benchmark>=5.2.3",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.14",
+    "types-pyyaml>=6.0.12.20250915",
+]

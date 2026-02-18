@@ -1,0 +1,353 @@
+{
+  "pending": [
+    {
+      "id": "EGA-005",
+      "component": "CompositeEnergy",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
+      "depends_on": [
+        "EGA-001",
+        "EGA-002",
+        "EGA-003",
+        "EGA-004"
+      ],
+      "priority": "critical",
+      "status": "pending",
+      "blocked_by": [
+        "EGA-002",
+        "EGA-001",
+        "EGA-004",
+        "EGA-003"
+      ]
+    },
+    {
+      "id": "PA-002",
+      "component": "RepairEngine",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#provenance-workstream",
+      "depends_on": [
+        "EGA-005",
+        "PA-001"
+      ],
+      "priority": "critical",
+      "status": "pending",
+      "blocked_by": [
+        "EGA-005",
+        "PA-001"
+      ]
+    },
+    {
+      "id": "PA-003",
+      "component": "FastPathDistillation",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#provenance-workstream",
+      "depends_on": [
+        "PA-002"
+      ],
+      "priority": "medium",
+      "status": "pending",
+      "blocked_by": [
+        "PA-002"
+      ]
+    },
+    {
+      "id": "RTA-001",
+      "component": "CorrupterAgent",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#red-team-workstream",
+      "depends_on": [
+        "EGA-005"
+      ],
+      "priority": "high",
+      "status": "pending",
+      "blocked_by": [
+        "EGA-005"
+      ]
+    },
+    {
+      "id": "RTA-002",
+      "component": "ContrastiveLearning",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#red-team-workstream",
+      "depends_on": [
+        "RTA-001",
+        "DA-001"
+      ],
+      "priority": "high",
+      "status": "pending",
+      "blocked_by": [
+        "DA-001",
+        "RTA-001"
+      ]
+    },
+    {
+      "id": "DA-001",
+      "component": "GoldTraceGeneration",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#dataset-workstream",
+      "depends_on": [
+        "LSA-004"
+      ],
+      "priority": "critical",
+      "status": "pending",
+      "blocked_by": [
+        "LSA-004"
+      ]
+    },
+    {
+      "id": "DA-002",
+      "component": "PolicyBoundaryCases",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#dataset-workstream",
+      "depends_on": [
+        "DA-001"
+      ],
+      "priority": "high",
+      "status": "pending",
+      "blocked_by": [
+        "DA-001"
+      ]
+    },
+    {
+      "id": "DA-003",
+      "component": "MinimalScopeLabels",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#dataset-workstream",
+      "depends_on": [
+        "DA-001"
+      ],
+      "priority": "medium",
+      "status": "pending",
+      "blocked_by": [
+        "DA-001"
+      ]
+    },
+    {
+      "id": "IA-001",
+      "component": "E2EPipeline",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#integration-workstream",
+      "depends_on": [
+        "EGA-005",
+        "PA-002",
+        "RTA-002"
+      ],
+      "priority": "critical",
+      "status": "pending",
+      "blocked_by": [
+        "EGA-005",
+        "PA-002",
+        "RTA-002"
+      ]
+    },
+    {
+      "id": "IA-002",
+      "component": "KonaBenchmarks",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#integration-workstream",
+      "depends_on": [
+        "IA-001"
+      ],
+      "priority": "critical",
+      "status": "pending",
+      "blocked_by": [
+        "IA-001"
+      ]
+    }
+  ],
+  "ready": [
+    {
+      "id": "LSA-004",
+      "agent": "latent_substrate",
+      "title": "Train JEPA Encoders on Benign Traces",
+      "description": "\n                Train the dual encoders using contrastive learning on benign execution logs.\n                \n                Requirements:\n                - Dataset: 100M benign tool-use traces (to be provided by dataset team)\n                - Training: InfoNCE loss, align (policy, execution) pairs\n                - Validation: Embedding space visualization, nearest neighbor accuracy\n                ",
+      "dependencies": [
+        "LSA-001",
+        "LSA-002"
+      ],
+      "acceptance_criteria": {
+        "functionality": [
+          "Training pipeline runs end-to-end",
+          "Embeddings cluster by policy type",
+          "Nearest neighbor accuracy >85%"
+        ],
+        "performance": [
+          "Training completes in <24 hours on single GPU"
+        ]
+      },
+      "estimated_tokens": 40000,
+      "priority": "high",
+      "downstream_consumers": [
+        "energy_geometry",
+        "red_team"
+      ],
+      "status": "ready",
+      "created_at": "2026-01-25T01:26:32.732864",
+      "created_by": "research_planner"
+    },
+    {
+      "id": "EGA-001",
+      "component": "E_hierarchy",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
+      "depends_on": [
+        "LSA-001",
+        "LSA-002"
+      ],
+      "priority": "high",
+      "status": "ready"
+    },
+    {
+      "id": "EGA-002",
+      "component": "E_provenance",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
+      "depends_on": [
+        "LSA-001",
+        "LSA-002"
+      ],
+      "priority": "high",
+      "status": "ready"
+    },
+    {
+      "id": "EGA-003",
+      "component": "E_scope",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
+      "depends_on": [
+        "LSA-003"
+      ],
+      "priority": "high",
+      "status": "ready"
+    },
+    {
+      "id": "EGA-004",
+      "component": "E_flow",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#energy-geometry-workstream",
+      "depends_on": [
+        "LSA-002"
+      ],
+      "priority": "medium",
+      "status": "ready"
+    },
+    {
+      "id": "PA-001",
+      "component": "TrustTierTagging",
+      "prd_section": "docs/WORK-DISTRIBUTION.md#provenance-workstream",
+      "depends_on": [
+        "LSA-001"
+      ],
+      "priority": "high",
+      "status": "ready"
+    }
+  ],
+  "in_progress": [],
+  "review": [],
+  "completed": [
+    {
+      "id": "LSA-001",
+      "agent": "latent_substrate",
+      "title": "Implement GovernanceEncoder",
+      "description": "\n                Build the transformer-based encoder that maps (policy, user_role, session_context)\n                into a 1024-dimensional Governance Latent vector.\n                \n                Requirements:\n                - Input: Policy schema (JSON/YAML), user role, session metadata\n                - Output: z_g \u2208 R^1024 (governance latent)\n                - Architecture: Transformer encoder with policy-aware attention\n                - Latency: <50ms inference on CPU\n                - Differentiable: Must support backpropagation\n                ",
+      "dependencies": [],
+      "acceptance_criteria": {
+        "code_quality": [
+          "Type hints",
+          "Docstrings",
+          "PEP8 compliant"
+        ],
+        "functionality": [
+          "Encodes policy into 1024-dim vector",
+          "Passes gradient flow test",
+          "Handles variable-length policy schemas"
+        ],
+        "performance": [
+          "<50ms inference latency",
+          "<500MB memory"
+        ],
+        "tests": [
+          "Unit tests >90% coverage",
+          "Integration test with mock policy"
+        ]
+      },
+      "estimated_tokens": 50000,
+      "priority": "high",
+      "downstream_consumers": [
+        "energy_geometry",
+        "integration"
+      ],
+      "outputs_required": [
+        "source/encoders/governance_encoder.py",
+        "test/test_governance_encoder.py",
+        "docs/encoders/governance_encoder.md"
+      ],
+      "status": "ready",
+      "created_at": "2026-01-25T01:26:32.732842",
+      "created_by": "research_planner",
+      "last_updated": "2026-01-25T02:00:30.831860",
+      "updated_by": "research_planner"
+    },
+    {
+      "id": "LSA-002",
+      "agent": "latent_substrate",
+      "title": "Implement ExecutionEncoder",
+      "description": "\n                Build the encoder that maps (proposed_plan, provenance_metadata)\n                into a 1024-dimensional Execution Latent vector.\n                \n                Requirements:\n                - Input: Tool-call graph with provenance tags\n                - Output: z_e \u2208 R^1024 (execution latent)\n                - Architecture: Graph Neural Network or Transformer over plan DAG\n                - Must preserve ordering and data flow semantics\n                ",
+      "dependencies": [
+        "LSA-001"
+      ],
+      "acceptance_criteria": {
+        "code_quality": [
+          "Type hints",
+          "Docstrings",
+          "PEP8 compliant"
+        ],
+        "functionality": [
+          "Encodes plan graph into 1024-dim vector",
+          "Preserves data flow dependencies",
+          "Handles variable plan lengths (1-100 nodes)"
+        ],
+        "performance": [
+          "<50ms inference latency"
+        ],
+        "tests": [
+          "Unit tests >90% coverage",
+          "Graph encoding tests"
+        ]
+      },
+      "estimated_tokens": 45000,
+      "priority": "high",
+      "downstream_consumers": [
+        "energy_geometry",
+        "integration"
+      ],
+      "status": "completed",
+      "created_at": "2026-01-25T01:26:32.732853",
+      "created_by": "research_planner",
+      "last_updated": "2026-01-25T11:02:43.361134",
+      "updated_by": "research_planner",
+      "error": "Streaming is required for operations that may take longer than 10 minutes. See https://github.com/anthropics/anthropic-sdk-python#long-requests for more details",
+      "completed_at": "2026-01-25T13:37:44.735385"
+    },
+    {
+      "id": "LSA-003",
+      "agent": "latent_substrate",
+      "title": "Implement Semantic Intent Predictor",
+      "description": "\n                Build a model that predicts the 'minimal scope budget' from user intent.\n                This serves as the reference point for E_scope (least privilege energy term).\n                \n                Requirements:\n                - Input: User message + tool schema\n                - Output: Predicted minimal scope (e.g., limit=5 for \"find invoice\")\n                - Used as ground truth for E_scope calculation\n                ",
+      "dependencies": [
+        "LSA-001"
+      ],
+      "acceptance_criteria": {
+        "functionality": [
+          "Predicts minimal data scope from user query",
+          "Outputs structured scope constraints"
+        ],
+        "performance": [
+          "<100ms inference"
+        ],
+        "tests": [
+          "Tested on 1000 diverse queries"
+        ]
+      },
+      "estimated_tokens": 35000,
+      "priority": "medium",
+      "downstream_consumers": [
+        "energy_geometry"
+      ],
+      "status": "completed",
+      "created_at": "2026-01-25T01:26:32.732859",
+      "created_by": "research_planner",
+      "last_updated": "2026-01-25T11:02:43.361991",
+      "updated_by": "research_planner",
+      "error": "Streaming is required for operations that may take longer than 10 minutes. See https://github.com/anthropics/anthropic-sdk-python#long-requests for more details",
+      "completed_at": "2026-01-25T13:37:44.735740"
+    }
+  ],
+  "failed": []
+}

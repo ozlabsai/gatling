@@ -1,0 +1,33 @@
+{
+  "code_quality": {
+    "required": [
+      "Type hints for all functions",
+      "Comprehensive docstrings",
+      "PEP8 compliant",
+      "No hardcoded values"
+    ]
+  },
+  "functionality": {
+    "required": [
+      "Produces correct output shape",
+      "Handles edge cases",
+      "Validates inputs",
+      "Differentiable (gradient flow test)"
+    ]
+  },
+  "performance": {
+    "required": [
+      "Inference latency < 50ms on CPU",
+      "Memory usage < 500MB",
+      "Batch processing supported"
+    ]
+  },
+  "tests": {
+    "required": [
+      "Unit test coverage > 90%",
+      "Integration test with mock data",
+      "Gradient flow test",
+      "Edge case tests"
+    ]
+  }
+}

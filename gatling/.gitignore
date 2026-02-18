@@ -1,1 +1,29 @@
+# Data files (large, managed via HuggingFace)
 data/*.jsonl
+data/*.log
+
+# Model outputs and checkpoints
+outputs/
+
+# HuggingFace cache
+.cache/
+
+# Agent/gt system runtime dirs
+.repo.git/
+.multiclaude/
+mayor/
+handoffs/
+heartbeat.json
+
+# Patrol reports (operational noise)
+patrol_report_*.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
