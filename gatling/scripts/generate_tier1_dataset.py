@@ -248,6 +248,7 @@ def generate_tier1_dataset(
     cache_dir: str = ".cache/huggingface",
     sample_mode: bool = False,
     track_filter: str = "all",
+    exclude_track: str | None = None,
 ):
     """
     Generate Tier I benign dataset from all available loaders.
@@ -258,6 +259,7 @@ def generate_tier1_dataset(
         cache_dir: HuggingFace cache directory
         sample_mode: If True, generate only 1000 samples for testing
         track_filter: Filter by polecat track (all, quartz, opal, jasper, topaz, ruby)
+        exclude_track: Exclude specific polecat track (e.g., topaz to skip expensive conversation loaders)
     """
     if sample_mode:
         print("\n🧪 SAMPLE MODE: Generating 1,000 samples for testing")
@@ -282,46 +284,54 @@ def generate_tier1_dataset(
 
     print(f"\n✓ Successfully imported {len(loaders)} loaders\n")
 
-    # Filter loaders by track if specified
-    if track_filter != "all":
-        # Map loader names to their polecat tracks
-        track_mapping = {
-            # Quartz loaders
-            "salesforce_xlam": "quartz",
-            "toolbank": "quartz",
-            "hermes_function_calling": "quartz",
-            "fiftyone": "quartz",
-            "twinkle": "quartz",
-            "mobile_actions": "quartz",
-            # Opal loaders
-            "apple_mmau": "opal",
-            "nvidia_toolscale": "opal",
-            "nvidia_nemotron": "opal",
-            "toolpref": "opal",
-            "astra_sft": "opal",
-            "toolmind": "opal",
-            "turkish_function_calling": "opal",
-            # Jasper loaders
-            "jasper_agentharm": "jasper",
-            "gsm8k": "jasper",
-            "math": "jasper",
-            "jasper_instruction_configs": "jasper",
-            "jasper_instruction_loader_class": "jasper",
-            # Topaz loaders
-            "lmsys": "topaz",
-            "wildchat": "topaz",
-            # Ruby loaders
-            "ruby_agentharm": "ruby",
-        }
+    # Map loader names to their polecat tracks
+    track_mapping = {
+        # Quartz loaders
+        "salesforce_xlam": "quartz",
+        "toolbank": "quartz",
+        "hermes_function_calling": "quartz",
+        "fiftyone": "quartz",
+        "twinkle": "quartz",
+        "mobile_actions": "quartz",
+        # Opal loaders
+        "apple_mmau": "opal",
+        "nvidia_toolscale": "opal",
+        "nvidia_nemotron": "opal",
+        "toolpref": "opal",
+        "astra_sft": "opal",
+        "toolmind": "opal",
+        "turkish_function_calling": "opal",
+        # Jasper loaders
+        "jasper_agentharm": "jasper",
+        "gsm8k": "jasper",
+        "math": "jasper",
+        "jasper_instruction_configs": "jasper",
+        "jasper_instruction_loader_class": "jasper",
+        # Topaz loaders
+        "lmsys": "topaz",
+        "wildchat": "topaz",
+        # Ruby loaders
+        "ruby_agentharm": "ruby",
+    }
 
-        # Filter loaders
-        original_count = len(loaders)
+    # Filter loaders by track if specified
+    original_count = len(loaders)
+    if track_filter != "all":
+        # Include only specified track
         loaders = {
             name: loader_class
             for name, loader_class in loaders.items()
             if track_mapping.get(name) == track_filter
         }
         print(f"🔍 Filtered to {len(loaders)} loaders for track '{track_filter}' (from {original_count})\n")
+    elif exclude_track:
+        # Exclude specified track
+        loaders = {
+            name: loader_class
+            for name, loader_class in loaders.items()
+            if track_mapping.get(name) != exclude_track
+        }
+        print(f"🔍 Excluded {original_count - len(loaders)} loaders from track '{exclude_track}' ({len(loaders)} remaining)\n")
 
     # Initialize loaders
     print("🔧 Initializing loaders...")
@@ -505,6 +515,12 @@ def main():
         default="all",
         help="Filter by polecat track (default: all)",
     )
+    parser.add_argument(
+        "--exclude-track",
+        type=str,
+        choices=["quartz", "opal", "jasper", "topaz", "ruby"],
+        help="Exclude specific polecat track (e.g., topaz to skip expensive conversation loaders)",
+    )
 
     args = parser.parse_args()
 
@@ -514,6 +530,7 @@ def main():
         cache_dir=args.cache_dir,
         sample_mode=args.sample_mode,
         track_filter=args.track,
+        exclude_track=args.exclude_track,
     )
 
 
